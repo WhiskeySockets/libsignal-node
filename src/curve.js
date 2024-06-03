@@ -63,7 +63,7 @@ exports.generateKeyPair = function() {
         const keyPair = curveJs.generateKeyPair(nodeCrypto.randomBytes(32));
         return {
             privKey: Buffer.from(keyPair.private),
-            pubKey: Buffer.from(keyPair.public),
+            pubKey: Buffer.concat([Buffer.from([5]), Buffer.from(keyPair.public)]),
         };
     }
 };
