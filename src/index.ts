@@ -1,3 +1,3 @@
 export * from './Utils'
 export * from './Signal'
-export * from './Types/index'
+export * from './Types'
