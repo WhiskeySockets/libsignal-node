@@ -3,7 +3,12 @@
   "version": "2.0.1",
   "description": "Open Whisper Systems' libsignal for Node.js",
   "repository": "ForstaLabs/libsignal-node",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build:tsc": "tsc",
+    "gen:protobuf": "sh WhisperTextProto/GenerateStatics.sh"
+  },
   "keywords": [
     "signal",
     "whispersystems",
@@ -12,10 +17,11 @@
   "license": "GPL-3.0",
   "dependencies": {
     "curve25519-js": "^0.0.4",
-    "protobufjs": "6.8.8"
+    "protobufjs": "^6.8.8"
   },
   "files": [
-    "src/*"
+    "src/*",
+    "WhisperTextProto/*"
   ],
   "devDependencies": {
     "eslint": "6.0.1"

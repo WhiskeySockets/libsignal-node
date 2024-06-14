@@ -1,35 +1,33 @@
+import { SessionRecord } from './session-record';
+import { BaseKeyType } from '../Types/BaseKey';
+import { ChainType } from '../Types/Chains';
+import * as errors from '../Utils/errors';
+import { calculateAgreement, generateKeyPair, verifySignature } from '../Utils/curve'
+import { deriveSecrets } from '../Utils/crypto'
+import { queueJob } from '../Utils/queue-job'
 
-'use strict';
+export class SessionBuilder {
+    private storage: any;
+    private addr: any;
 
-const BaseKeyType = require('./base_key_type');
-const ChainType = require('./chain_type');
-const SessionRecord = require('./session_record');
-const crypto = require('./crypto');
-const curve = require('./curve');
-const errors = require('./errors');
-const queueJob = require('./queue_job');
-
-
-class SessionBuilder {
-
-    constructor(storage, protocolAddress) {
+    constructor(storage: any, protocolAddress: any) {
         this.addr = protocolAddress;
         this.storage = storage;
     }
 
-    async initOutgoing(device) {
+    async initOutgoing(device: any) {
         const fqAddr = this.addr.toString();
         return await queueJob(fqAddr, async () => {
             if (!await this.storage.isTrustedIdentity(this.addr.id, device.identityKey)) {
                 throw new errors.UntrustedIdentityKeyError(this.addr.id, device.identityKey);
             }
-            curve.verifySignature(device.identityKey, device.signedPreKey.publicKey,
-                                  device.signedPreKey.signature);
-            const baseKey = curve.generateKeyPair();
+            verifySignature(device.identityKey, device.signedPreKey.publicKey,
+                device.signedPreKey.signature);
+            const baseKey = generateKeyPair();
             const devicePreKey = device.preKey && device.preKey.publicKey;
             const session = await this.initSession(true, baseKey, undefined, device.identityKey,
-                                                   devicePreKey, device.signedPreKey.publicKey,
-                                                   device.registrationId);
+                devicePreKey, device.signedPreKey.publicKey,
+                device.registrationId);
             session.pendingPreKey = {
                 signedKeyId: device.signedPreKey.keyId,
                 baseKey: baseKey.pubKey
@@ -52,7 +50,7 @@ class SessionBuilder {
         });
     }
 
-    async initIncoming(record, message) {
+    async initIncoming(record: any, message: any) {
         const fqAddr = this.addr.toString();
         if (!await this.storage.isTrustedIdentity(fqAddr, message.identityKey)) {
             throw new errors.UntrustedIdentityKeyError(this.addr.id, message.identityKey);
@@ -75,13 +73,13 @@ class SessionBuilder {
             record.closeSession(existingOpenSession);
         }
         record.setSession(await this.initSession(false, preKeyPair, signedPreKeyPair,
-                                                 message.identityKey, message.baseKey,
-                                                 undefined, message.registrationId));
+            message.identityKey, message.baseKey,
+            undefined, message.registrationId));
         return message.preKeyId;
     }
 
-    async initSession(isInitiator, ourEphemeralKey, ourSignedKey, theirIdentityPubKey,
-                      theirEphemeralPubKey, theirSignedPubKey, registrationId) {
+    async initSession(isInitiator: boolean, ourEphemeralKey: any, ourSignedKey: any, theirIdentityPubKey: any,
+        theirEphemeralPubKey: any, theirSignedPubKey: any, registrationId: any) {
         if (isInitiator) {
             if (ourSignedKey) {
                 throw new Error("Invalid call to initSession");
@@ -93,19 +91,19 @@ class SessionBuilder {
             }
             theirSignedPubKey = theirEphemeralPubKey;
         }
-        let sharedSecret;
+        let sharedSecret: Uint8Array;
         if (!ourEphemeralKey || !theirEphemeralPubKey) {
             sharedSecret = new Uint8Array(32 * 4);
         } else {
             sharedSecret = new Uint8Array(32 * 5);
         }
-        for (var i = 0; i < 32; i++) {
+        for (let i = 0; i < 32; i++) {
             sharedSecret[i] = 0xff;
         }
         const ourIdentityKey = await this.storage.getOurIdentity();
-        const a1 = curve.calculateAgreement(theirSignedPubKey, ourIdentityKey.privKey);
-        const a2 = curve.calculateAgreement(theirIdentityPubKey, ourSignedKey.privKey);
-        const a3 = curve.calculateAgreement(theirSignedPubKey, ourSignedKey.privKey);
+        const a1 = calculateAgreement(theirSignedPubKey, ourIdentityKey.privKey);
+        const a2 = calculateAgreement(theirIdentityPubKey, ourSignedKey.privKey);
+        const a3 = calculateAgreement(theirSignedPubKey, ourSignedKey.privKey);
         if (isInitiator) {
             sharedSecret.set(new Uint8Array(a1), 32);
             sharedSecret.set(new Uint8Array(a2), 32 * 2);
@@ -115,16 +113,16 @@ class SessionBuilder {
         }
         sharedSecret.set(new Uint8Array(a3), 32 * 3);
         if (ourEphemeralKey && theirEphemeralPubKey) {
-            const a4 = curve.calculateAgreement(theirEphemeralPubKey, ourEphemeralKey.privKey);
+            const a4 = calculateAgreement(theirEphemeralPubKey, ourEphemeralKey.privKey);
             sharedSecret.set(new Uint8Array(a4), 32 * 4);
         }
-        const masterKey = crypto.deriveSecrets(Buffer.from(sharedSecret), Buffer.alloc(32),
-                                               Buffer.from("WhisperText"));
+        const masterKey = deriveSecrets(Buffer.from(sharedSecret), Buffer.alloc(32),
+            Buffer.from("WhisperText"));
         const session = SessionRecord.createEntry();
         session.registrationId = registrationId;
         session.currentRatchet = {
             rootKey: masterKey[0],
-            ephemeralKeyPair: isInitiator ? curve.generateKeyPair() : ourSignedKey,
+            ephemeralKeyPair: isInitiator ? generateKeyPair() : ourSignedKey,
             lastRemoteEphemeralKey: theirSignedPubKey,
             previousCounter: 0
         };
@@ -145,10 +143,10 @@ class SessionBuilder {
         return session;
     }
 
-    calculateSendingRatchet(session, remoteKey) {
+    calculateSendingRatchet(session: any, remoteKey: any) {
         const ratchet = session.currentRatchet;
-        const sharedSecret = curve.calculateAgreement(remoteKey, ratchet.ephemeralKeyPair.privKey);
-        const masterKey = crypto.deriveSecrets(sharedSecret, ratchet.rootKey, Buffer.from("WhisperRatchet"));
+        const sharedSecret = calculateAgreement(remoteKey, ratchet.ephemeralKeyPair.privKey);
+        const masterKey = deriveSecrets(sharedSecret, ratchet.rootKey, Buffer.from("WhisperRatchet"));
         session.addChain(ratchet.ephemeralKeyPair.pubKey, {
             messageKeys: {},
             chainKey: {
@@ -160,5 +158,3 @@ class SessionBuilder {
         ratchet.rootKey = masterKey[0];
     }
 }
-
-module.exports = SessionBuilder;
