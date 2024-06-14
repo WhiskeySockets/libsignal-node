@@ -8,7 +8,7 @@ export interface EphemeralKeyPairSerialized {
 }
 
 export interface EphemeralKeyPairDeserialized {
-    pubKey: Buffer
+    pubKey: Buffer | Uint8Array
     privKey: Buffer 
 }
 

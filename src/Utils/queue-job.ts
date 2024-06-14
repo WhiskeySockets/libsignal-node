@@ -40,14 +40,14 @@ async function _asyncQueueExecutor(queue: QueueJob<any>[], cleanup: () => void) 
  * here have completed (or thrown).  The bucket argument is a hashable
  * key representing the task queue to use.
 */
-export function queueJob(bucket: string, awaitable: () => Promise<any>){
+export function queueJob<T>(bucket: string, awaitable: () => Promise<T>): Promise<T> {
     let inactive;
     if (!_queueAsyncBuckets.has(bucket)) {
         _queueAsyncBuckets.set(bucket, [])
         inactive = true
     }
     const queue = _queueAsyncBuckets.get(bucket)
-    const job = new Promise((resolve, reject) => queue?.push({
+    const job = new Promise<T>((resolve, reject) => queue?.push({
         awaitable,
         resolve,
         reject

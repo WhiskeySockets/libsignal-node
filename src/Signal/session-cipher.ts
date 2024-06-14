@@ -54,7 +54,7 @@ export class SessionCipher {
         return await queueJob(this.addr.toString(), awaitable);
     }
 
-    async encrypt(data: Buffer) {
+    async encrypt(data: Buffer | Uint8Array) {
         const ourIdentityKey = await this.storage.getOurIdentity();
         return await this.queueJob(async () => {
             const record = await this.getRecord();
@@ -125,7 +125,7 @@ export class SessionCipher {
         });
     }
 
-    async decryptWithSessions(data: Buffer, sessions: SessionEntry[]) {
+    async decryptWithSessions(data: Buffer | Uint8Array, sessions: SessionEntry[]) {
         // Iterate through the sessions, attempting to decrypt using each one.
         // Stop and return the result if we get a valid result.
         if (!sessions.length) {
@@ -152,7 +152,7 @@ export class SessionCipher {
         throw new errors.SessionError("No matching sessions found for message");
     }
 
-    async decryptWhisperMessage(data: Buffer) {
+    async decryptWhisperMessage(data: Buffer | Uint8Array) {
         return await this.queueJob(async () => {
             const record = await this.getRecord();
             if (!record) {
@@ -202,7 +202,7 @@ export class SessionCipher {
         });
     }
 
-    async doDecryptWhisperMessage(messageBuffer: Buffer, session: SessionEntry) {
+    async doDecryptWhisperMessage(messageBuffer: Buffer | Uint8Array, session: SessionEntry) {
         if (!session) {
             throw new TypeError("session required");
         }

@@ -7,7 +7,7 @@ export function calculateMAC(key: Buffer, data: Buffer) {
     return Buffer.from(hmac.digest())
 }
 
-export function encrypt(key: Buffer, data: Buffer, iv: Buffer) {
+export function encrypt(key: Buffer, data: Buffer | Uint8Array, iv: Buffer) {
     const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
     return Buffer.concat([cipher.update(data), cipher.final()])
 }
@@ -56,12 +56,12 @@ export function deriveSecrets(input: Buffer, salt: Buffer, info: Buffer, chunks?
     return signed
 }
 
-export function verifyMAC(data: Buffer, key: Buffer, mac: Buffer, length: number) {
+export function verifyMAC(data: Buffer, key: Buffer, mac: Buffer | Uint8Array, length: number) {
     const calculatedMac = calculateMAC(key, data).slice(0, length)
     if (mac.length !== length || calculatedMac.length !== length) {
         throw new Error("Bad MAC length")
     }
-    if (!mac.equals(calculatedMac)) {
+    if (!Buffer.from(mac).equals(calculatedMac)) {
         throw new Error("Bad MAC")
     }
 }

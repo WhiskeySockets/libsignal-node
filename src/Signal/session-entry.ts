@@ -55,7 +55,7 @@ export class SessionEntry implements SessionDeserialized {
         return this.toString();
     }
 
-    addChain(key: Buffer, value: any): void {
+    addChain(key: Buffer | Uint8Array, value: any): void {
         const id = key.toString('base64');
         if (this._chains.hasOwnProperty(id)) {
             throw new Error("Overwrite attempt");
@@ -67,7 +67,7 @@ export class SessionEntry implements SessionDeserialized {
         return this._chains[key.toString('base64')];
     }
 
-    deleteChain(key: Buffer): void {
+    deleteChain(key: Buffer | Uint8Array): void {
         const id = key.toString('base64');
         if (!this._chains.hasOwnProperty(id)) {
             throw new ReferenceError("Not Found");
