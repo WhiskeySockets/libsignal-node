@@ -6,8 +6,11 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
+    "build:all": "tsc && typedoc",
+    "build:docs": "typedoc",
     "build:tsc": "tsc",
     "prepare": "tsc",
+    "prepack": "tsc",
     "gen:protobuf": "sh WhisperTextProto/GenerateStatics.sh"
   },
   "keywords": [
@@ -25,6 +28,8 @@
     "WhisperTextProto/*"
   ],
   "devDependencies": {
-    "eslint": "6.0.1"
+    "eslint": "6.0.1",
+    "typedoc": "^0.25.13",
+    "typescript": "^5.4.5"
   }
 }
