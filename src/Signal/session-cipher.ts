@@ -1,5 +1,6 @@
 import { SESSION_CIPHER_VERSION } from '../Types/constants'
 import { ChainDeserialized, ChainType } from '../Types/Chains'
+import { PreKeyDeserialized } from '../Types/PreKey'
 
 import { ProtocolAddress } from './protocol-address'
 import { SessionBuilder } from './session-builder'
@@ -74,8 +75,11 @@ export class SessionCipher {
                 throw new Error("Tried to encrypt on a receiving chain");
             }
             this.fillMessageKeys(chain, chain.chainKey.counter + 1);
-            const keys = crypto.deriveSecrets(chain.messageKeys[chain.chainKey.counter],
-                                              Buffer.alloc(32), Buffer.from("WhisperMessageKeys"));
+            const keys = crypto.deriveSecrets(
+                chain.messageKeys[chain.chainKey.counter],
+                Buffer.alloc(32),
+                Buffer.from("WhisperMessageKeys")
+            );
             delete chain.messageKeys[chain.chainKey.counter];
             const msg = proto.textsecure.WhisperMessage.create();
             msg.ephemeralKey = session.currentRatchet.ephemeralKeyPair.pubKey;
@@ -225,8 +229,10 @@ export class SessionCipher {
         }
         const messageKey = chain.messageKeys[message.counter];
         delete chain.messageKeys[message.counter];
-        const keys = crypto.deriveSecrets(messageKey, Buffer.alloc(32),
-                                          Buffer.from("WhisperMessageKeys"));
+        const keys = crypto.deriveSecrets(
+            messageKey, Buffer.alloc(32),
+            Buffer.from("WhisperMessageKeys")
+        );
         const ourIdentityKey = await this.storage.getOurIdentity();
         const macInput = Buffer.alloc(messageProto.byteLength + (33 * 2) + 1);
         macInput.set(session.indexInfo.remoteIdentityKey);

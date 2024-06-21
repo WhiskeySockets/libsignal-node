@@ -13,7 +13,7 @@ function validatePrivKey(privKey: Buffer) {
     }
 }
 
-function scrubPubKeyFormat(pubKey: Buffer) {
+function scrubPubKeyFormat(pubKey: Buffer | undefined) {
     if (!(pubKey instanceof Buffer)) {
         throw new Error(`Invalid public key type`)
     }
@@ -36,7 +36,7 @@ export function generateKeyPair() {
     }
 }
 
-export function calculateAgreement(pubKey: Buffer, privKey: Buffer) {
+export function calculateAgreement(pubKey: Buffer | undefined, privKey: Buffer) {
     pubKey = scrubPubKeyFormat(pubKey)
     validatePrivKey(privKey)
     if (!pubKey || pubKey.byteLength != 32) {

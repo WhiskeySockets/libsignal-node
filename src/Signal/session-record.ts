@@ -40,7 +40,7 @@ export class SessionRecord {
         return new SessionEntry()
     }
 
-    static migrate(data: any): void {
+    static migrate(data: SessionRecordList): void {
         let run: boolean = data.version === undefined
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
@@ -84,7 +84,7 @@ export class SessionRecord {
         return (!!openSession && typeof openSession.registrationId === 'number')
     }
 
-    getSession(key: Buffer): SessionEntry {
+    getSession(key: Buffer | Uint8Array): SessionEntry {
         const session = this.sessions[key.toString('base64')]
         if (session && session.indexInfo.baseKeyType === BaseKeyType.OURS) {
             throw new Error("Tried to lookup a session using our basekey")

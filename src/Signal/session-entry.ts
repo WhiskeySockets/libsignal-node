@@ -1,7 +1,7 @@
 import { EphemeralKeyPairDeserialized, SessionDeserialized, SessionSerialized } from '../Types/Session';
 import { ChainDeserialized, ChainsDeserialized, ChainsSerialized } from '../Types/Chains'
 import { BaseKeyType } from '../Types/BaseKey';
-import { PreKeyDeserialized } from '../Types/PreKey';
+import { PendingPreKeyDeserialized, PreKeyDeserialized } from '../Types/PreKey';
 
 export class SessionEntry implements SessionDeserialized {
     registrationId: string;
@@ -20,7 +20,7 @@ export class SessionEntry implements SessionDeserialized {
         remoteIdentityKey: Buffer;
     };
     _chains: ChainsDeserialized;
-    pendingPreKey?: PreKeyDeserialized
+    pendingPreKey?: PendingPreKeyDeserialized
 
     constructor() {
         this.registrationId = '';

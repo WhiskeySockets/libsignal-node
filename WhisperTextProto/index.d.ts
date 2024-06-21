@@ -114,7 +114,7 @@ export namespace textsecure {
     interface IPreKeyWhisperMessage {
 
         /** PreKeyWhisperMessage registrationId */
-        registrationId?: (number|null);
+        registrationId?: (string|null);
 
         /** PreKeyWhisperMessage preKeyId */
         preKeyId?: (number|null);
@@ -142,7 +142,7 @@ export namespace textsecure {
         constructor(properties?: textsecure.IPreKeyWhisperMessage);
 
         /** PreKeyWhisperMessage registrationId. */
-        public registrationId: number;
+        public registrationId: string;
 
         /** PreKeyWhisperMessage preKeyId. */
         public preKeyId: number;

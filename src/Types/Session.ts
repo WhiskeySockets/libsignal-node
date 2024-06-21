@@ -1,6 +1,6 @@
 import { BaseKeyType } from './BaseKey'
 import { ChainsDeserialized, ChainsSerialized } from './Chains'
-import { PreKeyDeserialized, PreKeySerialized } from './PreKey'
+import { PendingPreKeyDeserialized, PendingPreKeySerialized, PreKeyDeserialized, PreKeySerialized } from './PreKey'
 
 export interface EphemeralKeyPairSerialized {
     pubKey: string
@@ -29,7 +29,7 @@ export interface SessionSerialized {
         remoteIdentityKey: string
     }
     _chains: ChainsSerialized
-    pendingPreKey?: PreKeySerialized
+    pendingPreKey?: PendingPreKeySerialized
 }
 
 export interface SessionDeserialized {
@@ -49,7 +49,7 @@ export interface SessionDeserialized {
         remoteIdentityKey: Buffer
     }
     _chains: ChainsDeserialized
-    pendingPreKey?: PreKeyDeserialized
+    pendingPreKey?: PendingPreKeyDeserialized
 }
 
 export interface SessionDeserializedList {
