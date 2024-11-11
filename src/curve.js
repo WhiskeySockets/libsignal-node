@@ -20,7 +20,7 @@ function validatePrivKey(privKey) {
         throw new Error(`Invalid private key type: ${privKey.constructor.name}`);
     }
     if (privKey.byteLength != 32) {
-        throw new Error(`Incorrect private key length: ${privKey.byteLength}`);
+        throw new Error(`Incorrect private key length: Expected 32 bytes, but received ${privKey.byteLength} bytes`);
     }
 }
 
