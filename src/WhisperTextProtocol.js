@@ -101,13 +101,13 @@ $root.textsecure = (function() {
         WhisperMessage.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            if (message.ephemeralKey != null && message.hasOwnProperty("ephemeralKey"))
+            if (message.ephemeralKey != null && Object.hasOwnProperty.call(message, "ephemeralKey"))
                 writer.uint32(/* id 1, wireType 2 =*/10).bytes(message.ephemeralKey);
-            if (message.counter != null && message.hasOwnProperty("counter"))
+            if (message.counter != null && Object.hasOwnProperty.call(message, "counter"))
                 writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.counter);
-            if (message.previousCounter != null && message.hasOwnProperty("previousCounter"))
+            if (message.previousCounter != null && Object.hasOwnProperty.call(message, "previousCounter"))
                 writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.previousCounter);
-            if (message.ciphertext != null && message.hasOwnProperty("ciphertext"))
+            if (message.ciphertext != null && Object.hasOwnProperty.call(message, "ciphertext"))
                 writer.uint32(/* id 4, wireType 2 =*/34).bytes(message.ciphertext);
             return writer;
         };
@@ -143,18 +143,22 @@ $root.textsecure = (function() {
             while (reader.pos < end) {
                 var tag = reader.uint32();
                 switch (tag >>> 3) {
-                case 1:
-                    message.ephemeralKey = reader.bytes();
-                    break;
-                case 2:
-                    message.counter = reader.uint32();
-                    break;
-                case 3:
-                    message.previousCounter = reader.uint32();
-                    break;
-                case 4:
-                    message.ciphertext = reader.bytes();
-                    break;
+                case 1: {
+                        message.ephemeralKey = reader.bytes();
+                        break;
+                    }
+                case 2: {
+                        message.counter = reader.uint32();
+                        break;
+                    }
+                case 3: {
+                        message.previousCounter = reader.uint32();
+                        break;
+                    }
+                case 4: {
+                        message.ciphertext = reader.bytes();
+                        break;
+                    }
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -220,7 +224,7 @@ $root.textsecure = (function() {
             if (object.ephemeralKey != null)
                 if (typeof object.ephemeralKey === "string")
                     $util.base64.decode(object.ephemeralKey, message.ephemeralKey = $util.newBuffer($util.base64.length(object.ephemeralKey)), 0);
-                else if (object.ephemeralKey.length)
+                else if (object.ephemeralKey.length >= 0)
                     message.ephemeralKey = object.ephemeralKey;
             if (object.counter != null)
                 message.counter = object.counter >>> 0;
@@ -229,7 +233,7 @@ $root.textsecure = (function() {
             if (object.ciphertext != null)
                 if (typeof object.ciphertext === "string")
                     $util.base64.decode(object.ciphertext, message.ciphertext = $util.newBuffer($util.base64.length(object.ciphertext)), 0);
-                else if (object.ciphertext.length)
+                else if (object.ciphertext.length >= 0)
                     message.ciphertext = object.ciphertext;
             return message;
         };
@@ -285,6 +289,21 @@ $root.textsecure = (function() {
          */
         WhisperMessage.prototype.toJSON = function toJSON() {
             return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for WhisperMessage
+         * @function getTypeUrl
+         * @memberof textsecure.WhisperMessage
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        WhisperMessage.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/textsecure.WhisperMessage";
         };
 
         return WhisperMessage;
@@ -391,17 +410,17 @@ $root.textsecure = (function() {
         PreKeyWhisperMessage.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            if (message.preKeyId != null && message.hasOwnProperty("preKeyId"))
+            if (message.preKeyId != null && Object.hasOwnProperty.call(message, "preKeyId"))
                 writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.preKeyId);
-            if (message.baseKey != null && message.hasOwnProperty("baseKey"))
+            if (message.baseKey != null && Object.hasOwnProperty.call(message, "baseKey"))
                 writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.baseKey);
-            if (message.identityKey != null && message.hasOwnProperty("identityKey"))
+            if (message.identityKey != null && Object.hasOwnProperty.call(message, "identityKey"))
                 writer.uint32(/* id 3, wireType 2 =*/26).bytes(message.identityKey);
-            if (message.message != null && message.hasOwnProperty("message"))
+            if (message.message != null && Object.hasOwnProperty.call(message, "message"))
                 writer.uint32(/* id 4, wireType 2 =*/34).bytes(message.message);
-            if (message.registrationId != null && message.hasOwnProperty("registrationId"))
+            if (message.registrationId != null && Object.hasOwnProperty.call(message, "registrationId"))
                 writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.registrationId);
-            if (message.signedPreKeyId != null && message.hasOwnProperty("signedPreKeyId"))
+            if (message.signedPreKeyId != null && Object.hasOwnProperty.call(message, "signedPreKeyId"))
                 writer.uint32(/* id 6, wireType 0 =*/48).uint32(message.signedPreKeyId);
             return writer;
         };
@@ -437,24 +456,30 @@ $root.textsecure = (function() {
             while (reader.pos < end) {
                 var tag = reader.uint32();
                 switch (tag >>> 3) {
-                case 5:
-                    message.registrationId = reader.uint32();
-                    break;
-                case 1:
-                    message.preKeyId = reader.uint32();
-                    break;
-                case 6:
-                    message.signedPreKeyId = reader.uint32();
-                    break;
-                case 2:
-                    message.baseKey = reader.bytes();
-                    break;
-                case 3:
-                    message.identityKey = reader.bytes();
-                    break;
-                case 4:
-                    message.message = reader.bytes();
-                    break;
+                case 5: {
+                        message.registrationId = reader.uint32();
+                        break;
+                    }
+                case 1: {
+                        message.preKeyId = reader.uint32();
+                        break;
+                    }
+                case 6: {
+                        message.signedPreKeyId = reader.uint32();
+                        break;
+                    }
+                case 2: {
+                        message.baseKey = reader.bytes();
+                        break;
+                    }
+                case 3: {
+                        message.identityKey = reader.bytes();
+                        break;
+                    }
+                case 4: {
+                        message.message = reader.bytes();
+                        break;
+                    }
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -532,17 +557,17 @@ $root.textsecure = (function() {
             if (object.baseKey != null)
                 if (typeof object.baseKey === "string")
                     $util.base64.decode(object.baseKey, message.baseKey = $util.newBuffer($util.base64.length(object.baseKey)), 0);
-                else if (object.baseKey.length)
+                else if (object.baseKey.length >= 0)
                     message.baseKey = object.baseKey;
             if (object.identityKey != null)
                 if (typeof object.identityKey === "string")
                     $util.base64.decode(object.identityKey, message.identityKey = $util.newBuffer($util.base64.length(object.identityKey)), 0);
-                else if (object.identityKey.length)
+                else if (object.identityKey.length >= 0)
                     message.identityKey = object.identityKey;
             if (object.message != null)
                 if (typeof object.message === "string")
                     $util.base64.decode(object.message, message.message = $util.newBuffer($util.base64.length(object.message)), 0);
-                else if (object.message.length)
+                else if (object.message.length >= 0)
                     message.message = object.message;
             return message;
         };
@@ -610,6 +635,21 @@ $root.textsecure = (function() {
          */
         PreKeyWhisperMessage.prototype.toJSON = function toJSON() {
             return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for PreKeyWhisperMessage
+         * @function getTypeUrl
+         * @memberof textsecure.PreKeyWhisperMessage
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        PreKeyWhisperMessage.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/textsecure.PreKeyWhisperMessage";
         };
 
         return PreKeyWhisperMessage;
@@ -707,15 +747,15 @@ $root.textsecure = (function() {
         KeyExchangeMessage.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            if (message.id != null && message.hasOwnProperty("id"))
+            if (message.id != null && Object.hasOwnProperty.call(message, "id"))
                 writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.id);
-            if (message.baseKey != null && message.hasOwnProperty("baseKey"))
+            if (message.baseKey != null && Object.hasOwnProperty.call(message, "baseKey"))
                 writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.baseKey);
-            if (message.ephemeralKey != null && message.hasOwnProperty("ephemeralKey"))
+            if (message.ephemeralKey != null && Object.hasOwnProperty.call(message, "ephemeralKey"))
                 writer.uint32(/* id 3, wireType 2 =*/26).bytes(message.ephemeralKey);
-            if (message.identityKey != null && message.hasOwnProperty("identityKey"))
+            if (message.identityKey != null && Object.hasOwnProperty.call(message, "identityKey"))
                 writer.uint32(/* id 4, wireType 2 =*/34).bytes(message.identityKey);
-            if (message.baseKeySignature != null && message.hasOwnProperty("baseKeySignature"))
+            if (message.baseKeySignature != null && Object.hasOwnProperty.call(message, "baseKeySignature"))
                 writer.uint32(/* id 5, wireType 2 =*/42).bytes(message.baseKeySignature);
             return writer;
         };
@@ -751,21 +791,26 @@ $root.textsecure = (function() {
             while (reader.pos < end) {
                 var tag = reader.uint32();
                 switch (tag >>> 3) {
-                case 1:
-                    message.id = reader.uint32();
-                    break;
-                case 2:
-                    message.baseKey = reader.bytes();
-                    break;
-                case 3:
-                    message.ephemeralKey = reader.bytes();
-                    break;
-                case 4:
-                    message.identityKey = reader.bytes();
-                    break;
-                case 5:
-                    message.baseKeySignature = reader.bytes();
-                    break;
+                case 1: {
+                        message.id = reader.uint32();
+                        break;
+                    }
+                case 2: {
+                        message.baseKey = reader.bytes();
+                        break;
+                    }
+                case 3: {
+                        message.ephemeralKey = reader.bytes();
+                        break;
+                    }
+                case 4: {
+                        message.identityKey = reader.bytes();
+                        break;
+                    }
+                case 5: {
+                        message.baseKeySignature = reader.bytes();
+                        break;
+                    }
                 default:
                     reader.skipType(tag & 7);
                     break;
@@ -836,22 +881,22 @@ $root.textsecure = (function() {
             if (object.baseKey != null)
                 if (typeof object.baseKey === "string")
                     $util.base64.decode(object.baseKey, message.baseKey = $util.newBuffer($util.base64.length(object.baseKey)), 0);
-                else if (object.baseKey.length)
+                else if (object.baseKey.length >= 0)
                     message.baseKey = object.baseKey;
             if (object.ephemeralKey != null)
                 if (typeof object.ephemeralKey === "string")
                     $util.base64.decode(object.ephemeralKey, message.ephemeralKey = $util.newBuffer($util.base64.length(object.ephemeralKey)), 0);
-                else if (object.ephemeralKey.length)
+                else if (object.ephemeralKey.length >= 0)
                     message.ephemeralKey = object.ephemeralKey;
             if (object.identityKey != null)
                 if (typeof object.identityKey === "string")
                     $util.base64.decode(object.identityKey, message.identityKey = $util.newBuffer($util.base64.length(object.identityKey)), 0);
-                else if (object.identityKey.length)
+                else if (object.identityKey.length >= 0)
                     message.identityKey = object.identityKey;
             if (object.baseKeySignature != null)
                 if (typeof object.baseKeySignature === "string")
                     $util.base64.decode(object.baseKeySignature, message.baseKeySignature = $util.newBuffer($util.base64.length(object.baseKeySignature)), 0);
-                else if (object.baseKeySignature.length)
+                else if (object.baseKeySignature.length >= 0)
                     message.baseKeySignature = object.baseKeySignature;
             return message;
         };
@@ -922,6 +967,21 @@ $root.textsecure = (function() {
          */
         KeyExchangeMessage.prototype.toJSON = function toJSON() {
             return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        /**
+         * Gets the default type url for KeyExchangeMessage
+         * @function getTypeUrl
+         * @memberof textsecure.KeyExchangeMessage
+         * @static
+         * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns {string} The default type url
+         */
+        KeyExchangeMessage.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
+            if (typeUrlPrefix === undefined) {
+                typeUrlPrefix = "type.googleapis.com";
+            }
+            return typeUrlPrefix + "/textsecure.KeyExchangeMessage";
         };
 
         return KeyExchangeMessage;

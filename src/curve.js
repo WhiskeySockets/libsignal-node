@@ -20,7 +20,7 @@ function validatePrivKey(privKey) {
         throw new Error(`Invalid private key type: ${privKey.constructor.name}`);
     }
     if (privKey.byteLength != 32) {
-        throw new Error(`Incorrect private key length: ${privKey.byteLength}`);
+        throw new Error(`Incorrect private key length: Expected 32 bytes, but received ${privKey.byteLength} bytes`);
     }
 }
 
@@ -32,7 +32,7 @@ function scrubPubKeyFormat(pubKey) {
         throw new Error("Invalid public key");
     }
     if (pubKey.byteLength == 33) {
-        return pubKey.slice(1);
+        return pubKey.subarray(1);
     } else {
         console.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
         return pubKey;
@@ -50,10 +50,10 @@ exports.generateKeyPair = function() {
         );
         // 33 bytes
         // first byte = 5 (version byte)
-        const pubKey = publicDerBytes.slice(PUBLIC_KEY_DER_PREFIX.length-1, PUBLIC_KEY_DER_PREFIX.length + 32);
+        const pubKey = publicDerBytes.subarray(PUBLIC_KEY_DER_PREFIX.length-1, PUBLIC_KEY_DER_PREFIX.length + 32);
         pubKey[0] = 5;
     
-        const privKey = privateDerBytes.slice(PRIVATE_KEY_DER_PREFIX.length, PRIVATE_KEY_DER_PREFIX.length + 32);
+        const privKey = privateDerBytes.subarray(PRIVATE_KEY_DER_PREFIX.length, PRIVATE_KEY_DER_PREFIX.length + 32);
     
         return {
             pubKey,
