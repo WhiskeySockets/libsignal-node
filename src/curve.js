@@ -2,6 +2,9 @@
 'use strict';
 
 const curveJs = require('curve25519-js');
+const logger = require('./logger');
+const loggerChild = logger.getLogger().child({ module: 'curve' });
+
 const nodeCrypto = require('crypto');
 // from: https://github.com/digitalbazaar/x25519-key-agreement-key-2019/blob/master/lib/crypto.js
 const PUBLIC_KEY_DER_PREFIX = Buffer.from([
@@ -40,7 +43,7 @@ function scrubPubKeyFormat(pubKey) {
     if (pubKey.byteLength == 33) {
         return pubKey.slice(1);
     } else {
-        console.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
+        loggerChild.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
         return pubKey;
     }
 }
