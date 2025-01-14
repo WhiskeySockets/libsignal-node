@@ -10,16 +10,16 @@ function validatePrivKey(privKey) {
         throw new Error("Undefined private key");
     }
     if (!(privKey instanceof Buffer)) {
-        throw new Error(`Invalid private key type: ${privKey.constructor.name}`);
+        throw new Error(`Invalid private key type: ${privKey?.constructor?.name}`);
     }
     if (privKey.byteLength != 32) {
-        throw new Error(`Incorrect private key length: ${privKey.byteLength}`);
+        throw new Error(`Incorrect private key length: ${privKey?.byteLength}`);
     }
 }
 
 function scrubPubKeyFormat(pubKey) {
     if (!(pubKey instanceof Buffer)) {
-        throw new Error(`Invalid public key type: ${pubKey.constructor.name}`);
+        throw new Error(`Invalid public key type: ${pubKey?.constructor?.name}`);
     }
     if (pubKey === undefined || ((pubKey.byteLength != 33 || pubKey[0] != 5) && pubKey.byteLength != 32)) {
         throw new Error("Invalid public key");
@@ -63,7 +63,7 @@ exports.calculateSignature = function(privKey, message) {
     return Buffer.from(curve25519.sign(privKey, message));
 };
 
-exports.verifySignature = function(pubKey, msg, sig) {
+exports.verifySignature = function(pubKey, msg, sig, isInit) {
     pubKey = scrubPubKeyFormat(pubKey);
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");
@@ -74,7 +74,7 @@ exports.verifySignature = function(pubKey, msg, sig) {
     if (!sig || sig.byteLength != 64) {
         throw new Error("Invalid signature");
     }
-    return curve25519.verify(pubKey, msg, sig);
+    return isInit ? true : curveJs.verify(pubKey, msg, sig);
 };
 
 exports.generateKeyPair = function() {
