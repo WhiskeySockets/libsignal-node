@@ -74,7 +74,7 @@ exports.verifySignature = function(pubKey, msg, sig, isInit) {
     if (!sig || sig.byteLength != 64) {
         throw new Error("Invalid signature");
     }
-    return isInit ? true : curveJs.verify(pubKey, msg, sig);
+    return isInit ? true : curve25519.verify(pubKey, msg, sig);
 };
 
 exports.generateKeyPair = function() {
