@@ -36,9 +36,14 @@ exports.sharedSecret = function(pubKey, privKey) {
 };
 
 exports.sign = function(privKey, message) {
-    return crypto.curve25519_sign(new Uint8Array(privKey), new Uint8Array(message)).buffer;
+    // Generate random bytes for the signature
+    const random = new Uint8Array(64);
+    for(let i = 0; i < 64; i++) {
+        random[i] = Math.floor(Math.random() * 256);
+    }
+    return crypto.curve25519_sign(new Uint8Array(privKey), new Uint8Array(message), random).buffer;
 };
 
 exports.verify = function(pubKey, message, sig) {
-    return crypto.curve25519_verify(new Uint8Array(pubKey), new Uint8Array(message), new Uint8Array(sig));
+    return crypto.curve25519_verify(new Uint8Array(sig), new Uint8Array(pubKey), new Uint8Array(message));
 };

@@ -9,16 +9,21 @@
     "crypto"
   ],
   "license": "GPL-3.0",
+  "main": "index.js",
   "scripts": {
     "install": "node-gyp rebuild",
-    "build": "node-gyp rebuild"
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean"
   },
   "dependencies": {
-    "node-addon-api": "^7.0.0",
+    "node-addon-api": "^7.1.0",
     "protobufjs": "6.8.8"
   },
   "devDependencies": {
     "eslint": "6.0.1"
   },
-  "gypfile": true
+  "gypfile": true,
+  "engines": {
+    "node": ">=14.0.0"
+  }
 }
