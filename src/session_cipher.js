@@ -257,8 +257,8 @@ class SessionCipher {
         if (chain.chainKey.counter >= counter) {
             return;
         }
-        if (counter - chain.chainKey.counter > 2000) {
-            throw new errors.SessionError('Over 2000 messages into the future!');
+        if (counter - chain.chainKey.counter > 500) {
+            throw new errors.SessionError('Over 500 messages into the future!');
         }
         if (chain.chainKey.key === undefined) {
             throw new errors.SessionError('Chain closed');
