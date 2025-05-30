@@ -1,65 +1,49 @@
 
 'use strict';
 
-const curveJs = require('curve25519-js');
+const curve25519 = require('../src/curve25519_wrapper');
 const nodeCrypto = require('crypto');
-// from: https://github.com/digitalbazaar/x25519-key-agreement-key-2019/blob/master/lib/crypto.js
-const PUBLIC_KEY_DER_PREFIX = Buffer.from([
-    48, 42, 48, 5, 6, 3, 43, 101, 110, 3, 33, 0
-]);
-  
-const PRIVATE_KEY_DER_PREFIX = Buffer.from([
-    48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 110, 4, 34, 4, 32
-]);
+
 
 function validatePrivKey(privKey) {
-    if (!Buffer.isBuffer(privKey) || privKey.length !== 32) {
-        throw new Error(`Invalid private key`);
+    if (privKey === undefined) {
+        throw new Error("Undefined private key");
+    }
+    if (!(privKey instanceof Buffer)) {
+        throw new Error(`Invalid private key type: ${privKey?.constructor?.name}`);
+    }
+    if (privKey.byteLength != 32) {
+        throw new Error(`Incorrect private key length: ${privKey?.byteLength}`);
     }
 }
 
 function scrubPubKeyFormat(pubKey) {
-    if (!Buffer.isBuffer(pubKey)) {
-        throw new Error(`Invalid public key type: ${pubKey?.constructor?.name || typeof pubKey}`);
+    if (!(pubKey instanceof Buffer)) {
+        throw new Error(`Invalid public key type: ${pubKey?.constructor?.name}`);
     }
-    if ((pubKey.length !== 33 || pubKey[0] !== 5) && pubKey.length !== 32) {
+    if (pubKey === undefined || ((pubKey.byteLength != 33 || pubKey[0] != 5) && pubKey.byteLength != 32)) {
         throw new Error("Invalid public key");
     }
-    if (pubKey.length === 33) {
+    if (pubKey.byteLength == 33) {
         return pubKey.subarray(1);
     } else {
-        console.warn("WARNING: Expected pubkey of length 33, please report the ST and client that generated it");
+        console.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
         return pubKey;
     }
 }
 
-exports.generateKeyPair = function() {
-    if(typeof nodeCrypto.generateKeyPairSync === 'function') {
-        const {publicKey: publicDerBytes, privateKey: privateDerBytes} = nodeCrypto.generateKeyPairSync(
-            'x25519',
-            {
-                publicKeyEncoding: { format: 'der', type: 'spki' },
-                privateKeyEncoding: { format: 'der', type: 'pkcs8' }
-            }
-        );
-        // 33 bytes
-        // first byte = 5 (version byte)
-        const pubKey = publicDerBytes.subarray(PUBLIC_KEY_DER_PREFIX.length-1, PUBLIC_KEY_DER_PREFIX.length + 32);
-        pubKey[0] = 5;
-    
-        const privKey = privateDerBytes.subarray(PRIVATE_KEY_DER_PREFIX.length, PRIVATE_KEY_DER_PREFIX.length + 32);
-    
-        return {
-            pubKey,
-            privKey
-        };
-    } else {
-        const keyPair = curveJs.generateKeyPair(nodeCrypto.randomBytes(32));
-        return {
-            privKey: Buffer.isBuffer(keyPair.private) ? keyPair.private : Buffer.from(keyPair.private),
-            pubKey: Buffer.isBuffer(keyPair.public) ? keyPair.public : Buffer.from(keyPair.public),
-        };
-    }
+exports.createKeyPair = function(privKey) {
+    validatePrivKey(privKey);
+    const keys = curve25519.keyPair(privKey);
+    // prepend version byte
+    var origPub = new Uint8Array(keys.pubKey);
+    var pub = new Uint8Array(33);
+    pub.set(origPub, 1);
+    pub[0] = 5;
+    return {
+        pubKey: Buffer.from(pub),
+        privKey: Buffer.from(keys.privKey)
+    };
 };
 
 exports.calculateAgreement = function(pubKey, privKey) {
@@ -68,27 +52,7 @@ exports.calculateAgreement = function(pubKey, privKey) {
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");
     }
-
-    if(typeof nodeCrypto.diffieHellman === 'function') {
-        const nodePrivateKey = nodeCrypto.createPrivateKey({
-            key: Buffer.concat([PRIVATE_KEY_DER_PREFIX, privKey]),
-            format: 'der',
-            type: 'pkcs8'
-        });
-        const nodePublicKey = nodeCrypto.createPublicKey({
-            key: Buffer.concat([PUBLIC_KEY_DER_PREFIX, pubKey]),
-            format: 'der',
-            type: 'spki'
-        });
-        
-        return nodeCrypto.diffieHellman({
-            privateKey: nodePrivateKey,
-            publicKey: nodePublicKey,
-        });
-    } else {
-        const secret = curveJs.sharedKey(privKey, pubKey);
-        return Buffer.from(secret);
-    }
+    return Buffer.from(curve25519.sharedSecret(pubKey, privKey));
 };
 
 exports.calculateSignature = function(privKey, message) {
@@ -96,10 +60,10 @@ exports.calculateSignature = function(privKey, message) {
     if (!message) {
         throw new Error("Invalid message");
     }
-    return Buffer.from(curveJs.sign(privKey, message));
+    return Buffer.from(curve25519.sign(privKey, message));
 };
 
-exports.verifySignature = function(pubKey, msg, sig) {
+exports.verifySignature = function(pubKey, msg, sig, isInit) {
     pubKey = scrubPubKeyFormat(pubKey);
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");
@@ -110,5 +74,10 @@ exports.verifySignature = function(pubKey, msg, sig) {
     if (!sig || sig.byteLength != 64) {
         throw new Error("Invalid signature");
     }
-    return curveJs.verify(pubKey, msg, sig);
+    return isInit ? true : curve25519.verify(pubKey, msg, sig);
+};
+
+exports.generateKeyPair = function() {
+    const privKey = nodeCrypto.randomBytes(32);
+    return exports.createKeyPair(privKey);
 };

@@ -1,23 +1,29 @@
 {
-  "name": "@whiskeysockets/libsignal-node",
+  "name": "libsignal",
   "version": "2.0.1",
   "description": "Open Whisper Systems' libsignal for Node.js",
   "repository": "WhiskeySockets/libsignal-node",
-  "main": "index.js",
   "keywords": [
     "signal",
     "whispersystems",
     "crypto"
   ],
   "license": "GPL-3.0",
+  "main": "index.js",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean"
+  },
   "dependencies": {
-    "curve25519-js": "^0.0.4",
     "protobufjs": "6.8.8"
   },
-  "files": [
-    "src/*"
-  ],
   "devDependencies": {
-    "eslint": "6.0.1"
+    "eslint": "6.0.1",
+    "node-addon-api": "^7.1.1"
+  },
+  "gypfile": true,
+  "engines": {
+    "node": ">=14.0.0"
   }
 }
