@@ -1,11 +1,13 @@
 // vim: ts=4:sw=4:expandtab
- 
+
+const logger = require('./logger');
+const loggerChild = logger.getLogger().child({ module: 'queue_job' });
+
  /*
   * jobQueue manages multiple queues indexed by device to serialize
   * session io ops on the database.
   */
 'use strict';
-
 
 const _queueAsyncBuckets = new Map();
 const _gcLimit = 10000;
@@ -47,7 +49,7 @@ module.exports = function(bucket, awaitable) {
         if (typeof bucket === 'string') {
             awaitable.name = bucket;
         } else {
-            console.warn("Unhandled bucket type (for naming):", typeof bucket, bucket);
+            loggerChild.warn({ bucketTypeof: typeof bucket, bucket }, "Unhandled bucket type (for naming):");
         }
     }
     let inactive;
