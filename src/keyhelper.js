@@ -11,7 +11,7 @@ exports.generateIdentityKeyPair = curve.generateKeyPair;
 
 exports.generateRegistrationId = function() {
     var registrationId = Uint16Array.from(nodeCrypto.randomBytes(2))[0];
-    return registrationId & 0x3fff;
+    return registrationId & 0x3fff; // 0x3fff is the maximum value for a 14-bit integer
 };
 
 exports.generateSignedPreKey = function(identityKeyPair, signedKeyId) {

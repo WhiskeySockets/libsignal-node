@@ -98,7 +98,7 @@ class SessionBuilder {
             sharedSecret = new Uint8Array(32 * 5);
         }
         for (var i = 0; i < 32; i++) {
-            sharedSecret[i] = 0xff;
+            sharedSecret[i] = 0xff; // Initialize to all 0xff
         }
         const ourIdentityKey = await this.storage.getOurIdentity();
         const a1 = curve.calculateAgreement(theirSignedPubKey, ourIdentityKey.privKey);

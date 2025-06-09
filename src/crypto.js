@@ -81,10 +81,12 @@ function deriveSecrets(input, salt, info, chunks = 3) {
 function verifyMAC(data, key, mac, length) {
     const calculatedMac = calculateMAC(key, data).subarray(0, length);
     if (mac.length !== length || calculatedMac.length !== length) {
-        throw new Error("Bad MAC length");
+        throw new Error("Bad MAC length Expected: " + length +
+            " Got: " + mac.length + " and " + calculatedMac.length);
     }
     if (!nodeCrypto.timingSafeEqual(mac, calculatedMac)) {
-        throw new Error("Bad MAC");
+        throw new Error("Bad MAC Expected: " + calculatedMac.toString('hex') +
+            " Got: " + mac.toString('hex'));
     }
 }
 

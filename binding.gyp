@@ -51,10 +51,10 @@
       "./src/crypto_binding.cpp"
     ],
     "include_dirs": [
-      "<!@(node -p \"require('node-addon-api').include\")",
-      "native/ed25519/nacl_includes",
-      "native/ed25519",
-      "native/ed25519/sha512"
+        "<!(node -p \"require('node-addon-api').include_dir\")",
+        "native/ed25519/nacl_includes",
+        "native/ed25519",
+        "native/ed25519/sha512"
     ],
     "defines": [ 
       "NAPI_DISABLE_CPP_EXCEPTIONS",
