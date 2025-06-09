@@ -255,6 +255,10 @@ class SessionCipher {
     }
 
     fillMessageKeys(chain, counter) {
+        if (chain.chainKey.counter >= counter) {
+            // We already have the keys for this counter, no need to fill them again.
+            return;
+        }
         if (counter - chain.chainKey.counter > 500) {
             throw new errors.SessionError('Over 500 messages into the future!');
         }
@@ -273,9 +277,6 @@ class SessionCipher {
             chain.messageKeys[nextCounter] = crypto.calculateMAC(key, Buffer.from([1]));
             chain.chainKey.key = crypto.calculateMAC(key, Buffer.from([2]));
             chain.chainKey.counter = nextCounter;
-        }
-        if (chain.chainKey.counter !== counter) {
-            throw new errors.MessageCounterError(`Counter mismatch: expected ${counter}, got ${chain.chainKey.counter}`);
         }
     }
 
