@@ -1,26 +1,29 @@
 // vim: ts=4:sw=4
 
 const BaseKeyType = require('./base_key_type');
+const { createLogger } = require('./utils/logger');
 
 const CLOSED_SESSIONS_MAX = 40;
 const SESSION_RECORD_VERSION = 'v1';
 
+const baseLogger = createLogger();
+
 function assertBuffer(value) {
     if (!Buffer.isBuffer(value)) {
-        throw new TypeError("Buffer required");
+        throw new TypeError('Buffer required');
     }
 }
 
-
 class SessionEntry {
-
     constructor() {
         this._chains = {};
+
+        this.logger = createLogger('SessionEntry');
     }
 
     toString() {
-        const baseKey = this.indexInfo && this.indexInfo.baseKey &&
-            this.indexInfo.baseKey.toString('base64');
+        const baseKey =
+            this.indexInfo && this.indexInfo.baseKey && this.indexInfo.baseKey.toString('base64');
         return `<SessionEntry [baseKey=${baseKey}]>`;
     }
 
@@ -32,7 +35,7 @@ class SessionEntry {
         assertBuffer(key);
         const id = key.toString('base64');
         if (this._chains.hasOwnProperty(id)) {
-            throw new Error("Overwrite attempt");
+            throw new Error('Overwrite attempt');
         }
         this._chains[id] = value;
     }
@@ -46,7 +49,7 @@ class SessionEntry {
         assertBuffer(key);
         const id = key.toString('base64');
         if (!this._chains.hasOwnProperty(id)) {
-            throw new ReferenceError("Not Found");
+            throw new ReferenceError('Not Found');
         }
         delete this._chains[id];
     }
@@ -65,7 +68,8 @@ class SessionEntry {
                     pubKey: this.currentRatchet.ephemeralKeyPair.pubKey.toString('base64'),
                     privKey: this.currentRatchet.ephemeralKeyPair.privKey.toString('base64')
                 },
-                lastRemoteEphemeralKey: this.currentRatchet.lastRemoteEphemeralKey.toString('base64'),
+                lastRemoteEphemeralKey:
+                    this.currentRatchet.lastRemoteEphemeralKey.toString('base64'),
                 previousCounter: this.currentRatchet.previousCounter,
                 rootKey: this.currentRatchet.rootKey.toString('base64')
             },
@@ -94,7 +98,10 @@ class SessionEntry {
                 pubKey: Buffer.from(data.currentRatchet.ephemeralKeyPair.pubKey, 'base64'),
                 privKey: Buffer.from(data.currentRatchet.ephemeralKeyPair.privKey, 'base64')
             },
-            lastRemoteEphemeralKey: Buffer.from(data.currentRatchet.lastRemoteEphemeralKey, 'base64'),
+            lastRemoteEphemeralKey: Buffer.from(
+                data.currentRatchet.lastRemoteEphemeralKey,
+                'base64'
+            ),
             previousCounter: data.currentRatchet.previousCounter,
             rootKey: Buffer.from(data.currentRatchet.rootKey, 'base64')
         };
@@ -153,51 +160,53 @@ class SessionEntry {
         }
         return r;
     }
-
 }
 
-
-const migrations = [{
-    version: 'v1',
-    migrate: function migrateV1(data) {
-        const sessions = data._sessions;
-        if (data.registrationId) {
-            for (const key in sessions) {
-                if (!sessions[key].registrationId) {
-                    sessions[key].registrationId = data.registrationId;
+const migrations = [
+    {
+        version: 'v1',
+        migrate: function migrateV1(data) {
+            const sessions = data._sessions;
+            if (data.registrationId) {
+                for (const key in sessions) {
+                    if (!sessions[key].registrationId) {
+                        sessions[key].registrationId = data.registrationId;
+                    }
                 }
-            }
-        } else {
-            for (const key in sessions) {
-                if (sessions[key].indexInfo.closed === -1) {
-                    console.error('V1 session storage migration error: registrationId',
-                                  data.registrationId, 'for open session version',
-                                  data.version);
+            } else {
+                for (const key in sessions) {
+                    if (sessions[key].indexInfo.closed === -1) {
+                        baseLogger.error(
+                            'V1 session storage migration error: registrationId is missing',
+                            {
+                                registrationId: data.registrationId,
+                                version: data.version
+                            }
+                        );
+                    }
                 }
             }
         }
     }
-}];
-
+];
 
 class SessionRecord {
-
     static createEntry() {
         return new SessionEntry();
     }
 
     static migrate(data) {
-        let run = (data.version === undefined);
+        let run = data.version === undefined;
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
-                console.info("Migrating session to:", migrations[i].version);
+                this.logger.info('Migrating session to:', migrations[i].version);
                 migrations[i].migrate(data);
             } else if (migrations[i].version === data.version) {
                 run = true;
             }
         }
         if (!run) {
-            throw new Error("Error migrating SessionRecord");
+            throw new Error('Error migrating SessionRecord');
         }
     }
 
@@ -217,6 +226,8 @@ class SessionRecord {
     constructor() {
         this.sessions = {};
         this.version = SESSION_RECORD_VERSION;
+
+        this.logger = createLogger('SessionRecord');
     }
 
     serialize() {
@@ -232,14 +243,14 @@ class SessionRecord {
 
     haveOpenSession() {
         const openSession = this.getOpenSession();
-        return (!!openSession && typeof openSession.registrationId === 'number');
+        return !!openSession && typeof openSession.registrationId === 'number';
     }
 
     getSession(key) {
         assertBuffer(key);
         const session = this.sessions[key.toString('base64')];
         if (session && session.indexInfo.baseKeyType === BaseKeyType.OURS) {
-            throw new Error("Tried to lookup a session using our basekey");
+            throw new Error('Tried to lookup a session using our basekey');
         }
         return session;
     }
@@ -267,18 +278,18 @@ class SessionRecord {
 
     closeSession(session) {
         if (this.isClosed(session)) {
-            console.warn("Session already closed", session);
+            this.logger.warn('Session already closed', session);
             return;
         }
-        console.info("Closing session:", session);
+        this.logger.info('Closing session:', session);
         session.indexInfo.closed = Date.now();
     }
 
     openSession(session) {
         if (!this.isClosed(session)) {
-            console.warn("Session already open");
+            this.logger.warn('Session already open');
         }
-        console.info("Opening session:", session);
+        this.logger.info('Opening session:', session);
         session.indexInfo.closed = -1;
     }
 
@@ -291,14 +302,16 @@ class SessionRecord {
             let oldestKey;
             let oldestSession;
             for (const [key, session] of Object.entries(this.sessions)) {
-                if (session.indexInfo.closed !== -1 &&
-                    (!oldestSession || session.indexInfo.closed < oldestSession.indexInfo.closed)) {
+                if (
+                    session.indexInfo.closed !== -1 &&
+                    (!oldestSession || session.indexInfo.closed < oldestSession.indexInfo.closed)
+                ) {
                     oldestKey = key;
                     oldestSession = session;
                 }
             }
             if (oldestKey) {
-                console.info("Removing old closed session:", oldestSession);
+                this.logger.info('Removing old closed session:', oldestSession);
                 delete this.sessions[oldestKey];
             } else {
                 throw new Error('Corrupt sessions object');
