@@ -1,10 +1,23 @@
 const { pino } = require('pino');
 
+/**
+ * This function returns the log level for the loggers based on
+ * environment variables. To silence the libsignal logs, just set an env var
+ * LIBSIGNAL_LOG_LEVEL=silent
+ *
+ * @returns {string} - The default log level.
+ */
 const getDefaultLogLevel = () => {
     const isDebug = process.env.DEBUG || process.env.NODE_ENV === 'development';
 
     if (isDebug) {
         return 'debug';
+    }
+
+    const hasLibsignalLogLevel = process.env.LIBSIGNAL_LOG_LEVEL;
+
+    if (hasLibsignalLogLevel) {
+        return process.env.LIBSIGNAL_LOG_LEVEL;
     }
 
     return process.env.LOG_LEVEL || 'info';
