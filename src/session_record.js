@@ -161,7 +161,6 @@ class SessionEntry {
 const migrations = [{
     version: 'v1',
     migrate: function migrateV1(data, logger) {
-        logger = logger || noopLogger;
         const sessions = data._sessions;
         if (data.registrationId) {
             for (const key in sessions) {
@@ -188,12 +187,12 @@ class SessionRecord {
         return new SessionEntry();
     }
 
-    static migrate(data) {
+    static migrate(data, logger) {
         let run = (data.version === undefined);
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
-                noopLogger.info("Migrating session to:", migrations[i].version);
-                migrations[i].migrate(data, noopLogger);
+                logger.info("Migrating session to:", migrations[i].version);
+                migrations[i].migrate(data, logger);
             } else if (migrations[i].version === data.version) {
                 run = true;
             }
@@ -203,9 +202,10 @@ class SessionRecord {
         }
     }
 
-    static deserialize(data) {
+    static deserialize(data, logger) {
+        logger = logger || noopLogger;
         if (data.version !== SESSION_RECORD_VERSION) {
-            this.migrate(data);
+            this.migrate(data, logger);
         }
         const obj = new this();
         if (data._sessions) {
