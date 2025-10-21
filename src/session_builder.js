@@ -50,7 +50,7 @@ class SessionBuilder {
             }
             record.setSession(session);
             await this.storage.storeSession(fqAddr, record);
-        });
+        }, this.logger);
     }
 
     async initIncoming(record, message) {

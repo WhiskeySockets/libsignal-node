@@ -61,7 +61,7 @@ class SessionCipher {
     }
 
     async queueJob(awaitable) {
-        return await queueJob(this.addr.toString(), awaitable);
+        return await queueJob(this.addr.toString(), awaitable, this.logger);
     }
 
     async encrypt(data) {
@@ -133,7 +133,7 @@ class SessionCipher {
                 body,
                 registrationId: session.registrationId
             };
-        });
+        }, this.logger);
     }
 
     async decryptWithSessions(data, sessions) {
@@ -185,7 +185,7 @@ class SessionCipher {
             }
             await this.storeRecord(record);
             return result.plaintext;
-        });
+        }, this.logger);
     }
 
     async decryptPreKeyWhisperMessage(data) {
@@ -212,7 +212,7 @@ class SessionCipher {
                 await this.storage.removePreKey(preKeyId);
             }
             return plaintext;
-        });
+        }, this.logger);
     }
 
     async doDecryptWhisperMessage(messageBuffer, session) {
@@ -318,7 +318,7 @@ class SessionCipher {
                 return false;
             }
             return record.haveOpenSession();
-        });
+        }, this.logger);
     }
 
     async closeOpenSession() {
@@ -331,7 +331,7 @@ class SessionCipher {
                     await this.storeRecord(record);
                 }
             }
-        });
+        }, this.logger);
     }
 }
 
