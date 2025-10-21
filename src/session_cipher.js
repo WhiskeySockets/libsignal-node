@@ -9,6 +9,7 @@ const curve = require('./curve');
 const errors = require('./errors');
 const protobufs = require('./protobufs');
 const queueJob = require('./queue_job');
+const noopLogger = require('./noop_logger');
 
 const VERSION = 3;
 
@@ -22,12 +23,13 @@ function assertBuffer(value) {
 
 class SessionCipher {
 
-    constructor(storage, protocolAddress) {
+    constructor(storage, protocolAddress, logger) {
         if (!(protocolAddress instanceof ProtocolAddress)) {
             throw new TypeError("protocolAddress must be a ProtocolAddress");
         }
         this.addr = protocolAddress;
         this.storage = storage;
+        this.logger = logger || noopLogger;
     }
 
     _encodeTupleByte(number1, number2) {
@@ -54,12 +56,12 @@ class SessionCipher {
     }
 
     async storeRecord(record) {
-        record.removeOldSessions();
+        record.removeOldSessions(this.logger);
         await this.storage.storeSession(this.addr.toString(), record);
     }
 
     async queueJob(awaitable) {
-        return await queueJob(this.addr.toString(), awaitable);
+        return await queueJob(this.addr.toString(), awaitable, this.logger);
     }
 
     async encrypt(data) {
@@ -154,9 +156,9 @@ class SessionCipher {
                 errs.push(e);
             }
         }
-        console.error("Failed to decrypt message with any known session...");
+        this.logger.error("Failed to decrypt message with any known session...");
         for (const e of errs) {
-            console.error("Session error:" + e, e.stack);
+            this.logger.error({ err: e, stack: e.stack }, "Session decryption error");
         }
         throw new errors.SessionError("No matching sessions found for message");
     }
@@ -179,7 +181,7 @@ class SessionCipher {
                 // was the most current.  Simply make a note of it and continue.  If our
                 // actual open session is for reason invalid, that must be handled via
                 // a full SessionError response.
-                console.warn("Decrypted message with closed session.");
+                this.logger.warn("Decrypted message with closed session.");
             }
             await this.storeRecord(record);
             return result.plaintext;
@@ -201,7 +203,7 @@ class SessionCipher {
                 }
                 record = new SessionRecord();
             }
-            const builder = new SessionBuilder(this.storage, this.addr);
+            const builder = new SessionBuilder(this.storage, this.addr, this.logger);
             const preKeyId = await builder.initIncoming(record, preKeyProto);
             const session = record.getSession(preKeyProto.baseKey);
             const plaintext = await this.doDecryptWhisperMessage(preKeyProto.message, session);
@@ -325,7 +327,7 @@ class SessionCipher {
             if (record) {
                 const openSession = record.getOpenSession();
                 if (openSession) {
-                    record.closeSession(openSession);
+                    record.closeSession(openSession, this.logger);
                     await this.storeRecord(record);
                 }
             }

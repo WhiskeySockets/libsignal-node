@@ -1,8 +1,8 @@
-
 'use strict';
 
 const curveJs = require('curve25519-js');
 const nodeCrypto = require('crypto');
+const noopLogger = require('./noop_logger');
 // from: https://github.com/digitalbazaar/x25519-key-agreement-key-2019/blob/master/lib/crypto.js
 const PUBLIC_KEY_DER_PREFIX = Buffer.from([
     48, 42, 48, 5, 6, 3, 43, 101, 110, 3, 33, 0
@@ -30,7 +30,7 @@ function validatePrivKey(privKey) {
     }
 }
 
-function scrubPubKeyFormat(pubKey) {
+function scrubPubKeyFormat(pubKey, logger = noopLogger) {
     if (!(pubKey instanceof Buffer)) {
         throw new Error(`Invalid public key type: ${pubKey.constructor.name}`);
     }
@@ -40,7 +40,7 @@ function scrubPubKeyFormat(pubKey) {
     if (pubKey.byteLength == 33) {
         return pubKey.slice(1);
     } else {
-        console.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
+        logger.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
         return pubKey;
     }
 }
@@ -90,8 +90,8 @@ exports.generateKeyPair = function() {
     }
 };
 
-exports.calculateAgreement = function(pubKey, privKey) {
-    pubKey = scrubPubKeyFormat(pubKey);
+exports.calculateAgreement = function(pubKey, privKey, logger = noopLogger) {
+    pubKey = scrubPubKeyFormat(pubKey, logger);
     validatePrivKey(privKey);
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");
@@ -127,8 +127,8 @@ exports.calculateSignature = function(privKey, message) {
     return Buffer.from(curveJs.sign(privKey, message));
 };
 
-exports.verifySignature = function(pubKey, msg, sig, isInit) {
-    pubKey = scrubPubKeyFormat(pubKey);
+exports.verifySignature = function(pubKey, msg, sig, isInit, logger = noopLogger) {
+    pubKey = scrubPubKeyFormat(pubKey, logger);
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");
     }

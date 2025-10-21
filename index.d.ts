@@ -12,6 +12,14 @@ interface E2ESession {
   };
 }
 
+export interface ILogger {
+  info(obj?: any, msg?: string): void;
+  warn(obj?: any, msg?: string): void;
+  error(obj?: any, msg?: string): void;
+  debug(obj?: any, msg?: string): void;
+  trace(obj?: any, msg?: string): void;
+}
+
 export interface SignalStorage {
   loadSession(id: string): Promise<SessionRecord | null | undefined>;
   storeSession(id: string, session: SessionRecord): Promise<void>;
@@ -30,6 +38,9 @@ export interface SignalStorage {
 }
 
 export class ProtocolAddress {
+  public readonly id: string;
+  public readonly deviceId: number;
+
   constructor(name: string, deviceId: number);
   public id: string;
   public deviceId: number;
@@ -37,19 +48,27 @@ export class ProtocolAddress {
 }
 
 export class SessionRecord {
-  static deserialize(serialized: Uint8Array): SessionRecord;
+  static deserialize(serialized: Uint8Array, logger?: ILogger): SessionRecord;
   public serialize(): Uint8Array;
   public haveOpenSession(): boolean;
 }
 
 export class SessionCipher {
-  constructor(storage: SignalStorage, remoteAddress: ProtocolAddress);
+  constructor(
+    storage: SignalStorage,
+    remoteAddress: ProtocolAddress,
+    logger?: ILogger
+  );
   public decryptPreKeyWhisperMessage(ciphertext: Uint8Array): Promise<Buffer>;
   public decryptWhisperMessage(ciphertext: Uint8Array): Promise<Buffer>;
   public encrypt(data: Uint8Array): Promise<{ type: number; body: string }>;
 }
 
 export class SessionBuilder {
-  constructor(storage: SignalStorage, remoteAddress: ProtocolAddress);
+  constructor(
+    storage: SignalStorage,
+    remoteAddress: ProtocolAddress,
+    logger?: ILogger
+  );
   public initOutgoing(session: E2ESession): Promise<void>;
 }

@@ -1,4 +1,3 @@
-
 'use strict';
 
 const BaseKeyType = require('./base_key_type');
@@ -8,13 +7,15 @@ const crypto = require('./crypto');
 const curve = require('./curve');
 const errors = require('./errors');
 const queueJob = require('./queue_job');
+const noopLogger = require('./noop_logger');
 
 
 class SessionBuilder {
 
-    constructor(storage, protocolAddress) {
+    constructor(storage, protocolAddress, logger) {
         this.addr = protocolAddress;
         this.storage = storage;
+        this.logger = logger || noopLogger;
     }
 
     async initOutgoing(device) {
@@ -43,13 +44,13 @@ class SessionBuilder {
             } else {
                 const openSession = record.getOpenSession();
                 if (openSession) {
-                    console.warn("Closing stale open session for new outgoing prekey bundle");
-                    record.closeSession(openSession);
+                    this.logger.warn("Closing stale open session for new outgoing prekey bundle");
+                    record.closeSession(openSession, this.logger);
                 }
             }
             record.setSession(session);
             await this.storage.storeSession(fqAddr, record);
-        });
+        }, this.logger);
     }
 
     async initIncoming(record, message) {
@@ -71,8 +72,8 @@ class SessionBuilder {
         }   
         const existingOpenSession = record.getOpenSession();
         if (existingOpenSession) {
-            console.warn("Closing open session in favor of incoming prekey bundle");
-            record.closeSession(existingOpenSession);
+            this.logger.warn("Closing open session in favor of incoming prekey bundle");
+            record.closeSession(existingOpenSession, this.logger);
         }
         record.setSession(await this.initSession(false, preKeyPair, signedPreKeyPair,
                                                  message.identityKey, message.baseKey,

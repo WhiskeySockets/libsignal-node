@@ -1,3 +1,5 @@
+import type { ILogger } from '../index';
+
 export interface KeyPairType {
   pubKey: Uint8Array;
   privKey: Uint8Array;
@@ -7,7 +9,8 @@ export function generateKeyPair(): KeyPairType;
 
 export function calculateAgreement(
   publicKey: Uint8Array,
-  privateKey: Uint8Array
+  privateKey: Uint8Array,
+  logger?: ILogger
 ): Uint8Array;
 
 export function calculateSignature(
@@ -18,5 +21,6 @@ export function calculateSignature(
 export function verifySignature(
   publicKey: Uint8Array,
   message: Uint8Array,
-  signature: Uint8Array
+  signature: Uint8Array,
+  logger?: ILogger
 ): boolean;

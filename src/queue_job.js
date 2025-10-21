@@ -6,6 +6,7 @@
   */
 'use strict';
 
+const noopLogger = require('./noop_logger');
 
 const _queueAsyncBuckets = new Map();
 const _gcLimit = 10000;
@@ -37,7 +38,7 @@ async function _asyncQueueExecutor(queue, cleanup) {
     cleanup();
 }
 
-module.exports = function(bucket, awaitable) {
+module.exports = function(bucket, awaitable, logger = noopLogger) {
     /* Run the async awaitable only when all other async calls registered
      * here have completed (or thrown).  The bucket argument is a hashable
      * key representing the task queue to use. */
@@ -47,7 +48,7 @@ module.exports = function(bucket, awaitable) {
         if (typeof bucket === 'string') {
             awaitable.name = bucket;
         } else {
-            console.warn("Unhandled bucket type (for naming):", typeof bucket, bucket);
+            logger.warn("Unhandled bucket type (for naming):", typeof bucket, bucket);
         }
     }
     let inactive;
