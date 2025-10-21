@@ -1,6 +1,7 @@
 // vim: ts=4:sw=4
 
 const BaseKeyType = require('./base_key_type');
+const noopLogger = require('./noop_logger');
 
 const CLOSED_SESSIONS_MAX = 40;
 const SESSION_RECORD_VERSION = 'v1';
@@ -159,7 +160,8 @@ class SessionEntry {
 
 const migrations = [{
     version: 'v1',
-    migrate: function migrateV1(data) {
+    migrate: function migrateV1(data, logger) {
+        logger = logger || noopLogger;
         const sessions = data._sessions;
         if (data.registrationId) {
             for (const key in sessions) {
@@ -170,7 +172,7 @@ const migrations = [{
         } else {
             for (const key in sessions) {
                 if (sessions[key].indexInfo.closed === -1) {
-                    console.error('V1 session storage migration error: registrationId',
+                    logger.error('V1 session storage migration error: registrationId',
                                   data.registrationId, 'for open session version',
                                   data.version);
                 }
@@ -190,8 +192,8 @@ class SessionRecord {
         let run = (data.version === undefined);
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
-                console.info("Migrating session to:", migrations[i].version);
-                migrations[i].migrate(data);
+                noopLogger.info("Migrating session to:", migrations[i].version);
+                migrations[i].migrate(data, noopLogger);
             } else if (migrations[i].version === data.version) {
                 run = true;
             }
@@ -265,20 +267,22 @@ class SessionRecord {
         });
     }
 
-    closeSession(session) {
+    closeSession(session, logger) {
+        logger = logger || noopLogger;
         if (this.isClosed(session)) {
-            console.warn("Session already closed", session);
+            logger.warn("Session already closed", session);
             return;
         }
-        console.info("Closing session:", session);
+        logger.info("Closing session:", session);
         session.indexInfo.closed = Date.now();
     }
 
-    openSession(session) {
+    openSession(session, logger) {
+        logger = logger || noopLogger;
         if (!this.isClosed(session)) {
-            console.warn("Session already open");
+            logger.warn("Session already open");
         }
-        console.info("Opening session:", session);
+        logger.info("Opening session:", session);
         session.indexInfo.closed = -1;
     }
 
@@ -286,7 +290,8 @@ class SessionRecord {
         return session.indexInfo.closed !== -1;
     }
 
-    removeOldSessions() {
+    removeOldSessions(logger) {
+        logger = logger || noopLogger;
         while (Object.keys(this.sessions).length > CLOSED_SESSIONS_MAX) {
             let oldestKey;
             let oldestSession;
@@ -298,7 +303,7 @@ class SessionRecord {
                 }
             }
             if (oldestKey) {
-                console.info("Removing old closed session:", oldestSession);
+                logger.info("Removing old closed session:", oldestSession);
                 delete this.sessions[oldestKey];
             } else {
                 throw new Error('Corrupt sessions object');

@@ -6,6 +6,7 @@
   */
 'use strict';
 
+const noopLogger = require('./noop_logger');
 
 const _queueAsyncBuckets = new Map();
 const _gcLimit = 10000;
@@ -47,7 +48,7 @@ module.exports = function(bucket, awaitable) {
         if (typeof bucket === 'string') {
             awaitable.name = bucket;
         } else {
-            console.warn("Unhandled bucket type (for naming):", typeof bucket, bucket);
+            noopLogger.warn("Unhandled bucket type (for naming):", typeof bucket, bucket);
         }
     }
     let inactive;
