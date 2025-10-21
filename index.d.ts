@@ -38,6 +38,9 @@ export interface SignalStorage {
 }
 
 export class ProtocolAddress {
+  public readonly id: string;
+  public readonly deviceId: number;
+
   constructor(name: string, deviceId: number);
   public getName(): string;
   public getDeviceId(): number;
@@ -51,13 +54,21 @@ export class SessionRecord {
 }
 
 export class SessionCipher {
-  constructor(storage: SignalStorage, remoteAddress: ProtocolAddress, logger?: ILogger);
+  constructor(
+    storage: SignalStorage,
+    remoteAddress: ProtocolAddress,
+    logger?: ILogger
+  );
   public decryptPreKeyWhisperMessage(ciphertext: Uint8Array): Promise<Buffer>;
   public decryptWhisperMessage(ciphertext: Uint8Array): Promise<Buffer>;
   public encrypt(data: Uint8Array): Promise<{ type: number; body: string }>;
 }
 
 export class SessionBuilder {
-  constructor(storage: SignalStorage, remoteAddress: ProtocolAddress, logger?: ILogger);
+  constructor(
+    storage: SignalStorage,
+    remoteAddress: ProtocolAddress,
+    logger?: ILogger
+  );
   public initOutgoing(session: E2ESession): Promise<void>;
 }
