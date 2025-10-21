@@ -275,7 +275,7 @@ class SessionRecord {
             logger.warn({ session }, "Session already closed");
             return;
         }
-        logger.info({ session }, "Closing session");
+        logger.debug({ session }, "Closing session");
         session.indexInfo.closed = Date.now();
     }
 
