@@ -272,19 +272,19 @@ class SessionRecord {
     closeSession(session, logger) {
         logger = logger || noopLogger;
         if (this.isClosed(session)) {
-            logger.warn({ session: session.toString() }, "Session already closed");
+            logger.warn({ session }, "Session already closed");
             return;
         }
-        logger.info({ session: session.toString() }, "Closing session");
+        logger.info({ session }, "Closing session");
         session.indexInfo.closed = Date.now();
     }
 
     openSession(session, logger) {
         logger = logger || noopLogger;
         if (!this.isClosed(session)) {
-            logger.warn({ session: session.toString() }, "Session already open");
+            logger.warn({ session }, "Session already open");
         }
-        logger.info({ session: session.toString() }, "Opening session");
+        logger.info({ session }, "Opening session");
         session.indexInfo.closed = -1;
     }
 
@@ -305,7 +305,7 @@ class SessionRecord {
                 }
             }
             if (oldestKey) {
-                logger.info({ session: oldestSession.toString() }, "Removing old closed session");
+                logger.info({ session: oldestSession }, "Removing old closed session");
                 delete this.sessions[oldestKey];
             } else {
                 throw new Error('Corrupt sessions object');
