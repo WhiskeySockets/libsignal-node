@@ -45,7 +45,7 @@ export class ProtocolAddress {
 }
 
 export class SessionRecord {
-  static deserialize(serialized: Uint8Array): SessionRecord;
+  static deserialize(serialized: Uint8Array, logger?: ILogger): SessionRecord;
   public serialize(): Uint8Array;
   public haveOpenSession(): boolean;
 }

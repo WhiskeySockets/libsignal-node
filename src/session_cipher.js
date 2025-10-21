@@ -327,7 +327,7 @@ class SessionCipher {
             if (record) {
                 const openSession = record.getOpenSession();
                 if (openSession) {
-                    record.closeSession(openSession);
+                    record.closeSession(openSession, this.logger);
                     await this.storeRecord(record);
                 }
             }

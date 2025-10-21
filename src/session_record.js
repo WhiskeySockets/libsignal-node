@@ -188,6 +188,7 @@ class SessionRecord {
     }
 
     static migrate(data, logger) {
+        logger = logger || noopLogger;
         let run = (data.version === undefined);
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
