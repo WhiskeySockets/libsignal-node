@@ -171,9 +171,10 @@ const migrations = [{
         } else {
             for (const key in sessions) {
                 if (sessions[key].indexInfo.closed === -1) {
-                    logger.error('V1 session storage migration error: registrationId',
-                                  data.registrationId, 'for open session version',
-                                  data.version);
+                    logger.error({ 
+                        registrationId: data.registrationId, 
+                        version: data.version 
+                    }, 'V1 session storage migration error');
                 }
             }
         }
@@ -192,7 +193,7 @@ class SessionRecord {
         let run = (data.version === undefined);
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
-                logger.info("Migrating session to:", migrations[i].version);
+                logger.info({ toVersion: migrations[i].version }, "Migrating session");
                 migrations[i].migrate(data, logger);
             } else if (migrations[i].version === data.version) {
                 run = true;
@@ -271,19 +272,19 @@ class SessionRecord {
     closeSession(session, logger) {
         logger = logger || noopLogger;
         if (this.isClosed(session)) {
-            logger.warn("Session already closed", session);
+            logger.warn({ session: session.toString() }, "Session already closed");
             return;
         }
-        logger.info("Closing session:", session);
+        logger.info({ session: session.toString() }, "Closing session");
         session.indexInfo.closed = Date.now();
     }
 
     openSession(session, logger) {
         logger = logger || noopLogger;
         if (!this.isClosed(session)) {
-            logger.warn("Session already open");
+            logger.warn({ session: session.toString() }, "Session already open");
         }
-        logger.info("Opening session:", session);
+        logger.info({ session: session.toString() }, "Opening session");
         session.indexInfo.closed = -1;
     }
 
@@ -304,7 +305,7 @@ class SessionRecord {
                 }
             }
             if (oldestKey) {
-                logger.info("Removing old closed session:", oldestSession);
+                logger.info({ session: oldestSession.toString() }, "Removing old closed session");
                 delete this.sessions[oldestKey];
             } else {
                 throw new Error('Corrupt sessions object');
