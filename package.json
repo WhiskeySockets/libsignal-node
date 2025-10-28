@@ -8,8 +8,13 @@
     "whispersystems",
     "crypto"
   ],
+  "types": "index.d.ts",
   "license": "GPL-3.0",
   "main": "index.js",
+  "files": [
+    "src/*",
+    "index.d.ts"
+  ],
   "scripts": {
     "install": "node-gyp rebuild",
     "build": "node-gyp rebuild",

@@ -10,16 +10,16 @@ function validatePrivKey(privKey) {
         throw new Error("Undefined private key");
     }
     if (!(privKey instanceof Buffer)) {
-        throw new Error(`Invalid private key type: ${privKey?.constructor?.name}`);
+        throw new Error(`Invalid private key type: ${privKey.constructor.name}`);
     }
     if (privKey.byteLength != 32) {
-        throw new Error(`Incorrect private key length: ${privKey?.byteLength}`);
+        throw new Error(`Incorrect private key length: ${privKey.byteLength}`);
     }
 }
 
 function scrubPubKeyFormat(pubKey) {
     if (!(pubKey instanceof Buffer)) {
-        throw new Error(`Invalid public key type: ${pubKey?.constructor?.name}`);
+        throw new Error(`Invalid public key type: ${pubKey.constructor.name}`);
     }
     if (pubKey === undefined || ((pubKey.byteLength != 33 || pubKey[0] != 5) && pubKey.byteLength != 32)) {
         throw new Error("Invalid public key");
