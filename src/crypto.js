@@ -79,7 +79,7 @@ function deriveSecrets(input, salt, info, chunks) {
 }
 
 function verifyMAC(data, key, mac, length) {
-    const calculatedMac = calculateMAC(key, data).slice(0, length);
+    const calculatedMac = calculateMAC(key, data).subarray(0, length);
     if (mac.length !== length || calculatedMac.length !== length) {
         throw new Error("Bad MAC length");
     }
