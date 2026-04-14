@@ -118,7 +118,7 @@ class SessionBuilder {
             const a4 = curve.calculateAgreement(theirEphemeralPubKey, ourEphemeralKey.privKey);
             sharedSecret.set(new Uint8Array(a4), 32 * 4);
         }
-        const masterKey = crypto.deriveSecrets(Buffer.from(sharedSecret), Buffer.alloc(32),
+        const masterKey = await crypto.deriveSecrets(Buffer.from(sharedSecret), Buffer.alloc(32),
                                                Buffer.from("WhisperText"));
         const session = SessionRecord.createEntry();
         session.registrationId = registrationId;
@@ -140,15 +140,15 @@ class SessionBuilder {
             // If we're initiating we go ahead and set our first sending ephemeral key now,
             // otherwise we figure it out when we first maybeStepRatchet with the remote's
             // ephemeral key
-            this.calculateSendingRatchet(session, theirSignedPubKey);
+            await this.calculateSendingRatchet(session, theirSignedPubKey);
         }
         return session;
     }
 
-    calculateSendingRatchet(session, remoteKey) {
+    async calculateSendingRatchet(session, remoteKey) {
         const ratchet = session.currentRatchet;
         const sharedSecret = curve.calculateAgreement(remoteKey, ratchet.ephemeralKeyPair.privKey);
-        const masterKey = crypto.deriveSecrets(sharedSecret, ratchet.rootKey, Buffer.from("WhisperRatchet"));
+        const masterKey = await crypto.deriveSecrets(sharedSecret, ratchet.rootKey, Buffer.from("WhisperRatchet"));
         session.addChain(ratchet.ephemeralKeyPair.pubKey, {
             messageKeys: {},
             chainKey: {

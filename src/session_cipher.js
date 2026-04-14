@@ -82,22 +82,22 @@ class SessionCipher {
             if (chain.chainType === ChainType.RECEIVING) {
                 throw new Error("Tried to encrypt on a receiving chain");
             }
-            this.fillMessageKeys(chain, chain.chainKey.counter + 1);
-            const keys = crypto.deriveSecrets(chain.messageKeys[chain.chainKey.counter],
+            await this.fillMessageKeys(chain, chain.chainKey.counter + 1);
+            const keys = await crypto.deriveSecrets(chain.messageKeys[chain.chainKey.counter],
                                               Buffer.alloc(32), Buffer.from("WhisperMessageKeys"));
             delete chain.messageKeys[chain.chainKey.counter];
             const msg = protobufs.WhisperMessage.create();
             msg.ephemeralKey = session.currentRatchet.ephemeralKeyPair.pubKey;
             msg.counter = chain.chainKey.counter;
             msg.previousCounter = session.currentRatchet.previousCounter;
-            msg.ciphertext = crypto.encrypt(keys[0], data, keys[2].subarray(0, 16));
+            msg.ciphertext = await crypto.encrypt(keys[0], data, keys[2].subarray(0, 16));
             const msgBuf = protobufs.WhisperMessage.encode(msg).finish();
             const macInput = Buffer.alloc(msgBuf.byteLength + (33 * 2) + 1);
             macInput.set(ourIdentityKey.pubKey);
             macInput.set(session.indexInfo.remoteIdentityKey, 33);
             macInput[33 * 2] = this._encodeTupleByte(VERSION, VERSION);
             macInput.set(msgBuf, (33 * 2) + 1);
-            const mac = crypto.calculateMAC(keys[1], macInput);
+            const mac = await crypto.calculateMAC(keys[1], macInput);
             const result = Buffer.alloc(msgBuf.byteLength + 9);
             result[0] = this._encodeTupleByte(VERSION, VERSION);
             result.set(msgBuf, 1);
@@ -224,12 +224,12 @@ class SessionCipher {
         }
         const messageProto = messageBuffer.slice(1, -8);
         const message = protobufs.WhisperMessage.decode(messageProto);
-        this.maybeStepRatchet(session, message.ephemeralKey, message.previousCounter);
+        await this.maybeStepRatchet(session, message.ephemeralKey, message.previousCounter);
         const chain = session.getChain(message.ephemeralKey);
         if (chain.chainType === ChainType.SENDING) {
             throw new Error("Tried to decrypt on a sending chain");
         }
-        this.fillMessageKeys(chain, message.counter);
+        await this.fillMessageKeys(chain, message.counter);
         if (!chain.messageKeys.hasOwnProperty(message.counter)) {
             // Most likely the message was already decrypted and we are trying to process
             // twice.  This can happen if the user restarts before the server gets an ACK.
@@ -237,7 +237,7 @@ class SessionCipher {
         }
         const messageKey = chain.messageKeys[message.counter];
         delete chain.messageKeys[message.counter];
-        const keys = crypto.deriveSecrets(messageKey, Buffer.alloc(32),
+        const keys = await crypto.deriveSecrets(messageKey, Buffer.alloc(32),
                                           Buffer.from("WhisperMessageKeys"));
         const ourIdentityKey = await this.storage.getOurIdentity();
         const macInput = Buffer.alloc(messageProto.byteLength + (33 * 2) + 1);
@@ -247,13 +247,13 @@ class SessionCipher {
         macInput.set(messageProto, (33 * 2) + 1);
         // This is where we most likely fail if the session is not a match.
         // Don't misinterpret this as corruption.
-        crypto.verifyMAC(macInput, keys[1], messageBuffer.slice(-8), 8);
-        const plaintext = crypto.decrypt(keys[0], message.ciphertext, keys[2].subarray(0, 16));
+        await crypto.verifyMAC(macInput, keys[1], messageBuffer.slice(-8), 8);
+        const plaintext = await crypto.decrypt(keys[0], message.ciphertext, keys[2].subarray(0, 16));
         delete session.pendingPreKey;
         return plaintext;
     }
 
-    fillMessageKeys(chain, counter) {
+    async fillMessageKeys(chain, counter) {
         if (chain.chainKey.counter >= counter) {
             return;
         }
@@ -267,23 +267,23 @@ class SessionCipher {
             const key = chain.chainKey.key;
             const nextCounter = chain.chainKey.counter + 1;
 
-            chain.messageKeys[nextCounter] = crypto.calculateMAC(key, Buffer.from([1]));
-            chain.chainKey.key = crypto.calculateMAC(key, Buffer.from([2]));
+            chain.messageKeys[nextCounter] = await crypto.calculateMAC(key, Buffer.from([1]));
+            chain.chainKey.key = await crypto.calculateMAC(key, Buffer.from([2]));
             chain.chainKey.counter = nextCounter;
         }
     }
 
-    maybeStepRatchet(session, remoteKey, previousCounter) {
+    async maybeStepRatchet(session, remoteKey, previousCounter) {
         if (session.getChain(remoteKey)) {
             return;
         }
         const ratchet = session.currentRatchet;
         let previousRatchet = session.getChain(ratchet.lastRemoteEphemeralKey);
         if (previousRatchet) {
-            this.fillMessageKeys(previousRatchet, previousCounter);
+            await this.fillMessageKeys(previousRatchet, previousCounter);
             delete previousRatchet.chainKey.key;  // Close
         }
-        this.calculateRatchet(session, remoteKey, false);
+        await this.calculateRatchet(session, remoteKey, false);
         // Now swap the ephemeral key and calculate the new sending chain
         const prevCounter = session.getChain(ratchet.ephemeralKeyPair.pubKey);
         if (prevCounter) {
@@ -291,14 +291,14 @@ class SessionCipher {
             session.deleteChain(ratchet.ephemeralKeyPair.pubKey);
         }
         ratchet.ephemeralKeyPair = curve.generateKeyPair();
-        this.calculateRatchet(session, remoteKey, true);
+        await this.calculateRatchet(session, remoteKey, true);
         ratchet.lastRemoteEphemeralKey = remoteKey;
     }
 
-    calculateRatchet(session, remoteKey, sending) {
+    async calculateRatchet(session, remoteKey, sending) {
         let ratchet = session.currentRatchet;
         const sharedSecret = curve.calculateAgreement(remoteKey, ratchet.ephemeralKeyPair.privKey);
-        const masterKey = crypto.deriveSecrets(sharedSecret, ratchet.rootKey,
+        const masterKey = await crypto.deriveSecrets(sharedSecret, ratchet.rootKey,
                                                Buffer.from("WhisperRatchet"), /*chunks*/ 2);
         const chainKey = sending ? ratchet.ephemeralKeyPair.pubKey : remoteKey;
         session.addChain(chainKey, {

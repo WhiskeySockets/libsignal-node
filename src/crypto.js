@@ -2,7 +2,8 @@
 
 'use strict';
 
-const nodeCrypto = require('crypto');
+const { webcrypto } = require('crypto');
+const subtle = webcrypto.subtle;
 const assert = require('assert');
 
 
@@ -14,43 +15,45 @@ function assertBuffer(value) {
 }
 
 
-function encrypt(key, data, iv) {
+async function encrypt(key, data, iv) {
     assertBuffer(key);
     assertBuffer(data);
     assertBuffer(iv);
-    const cipher = nodeCrypto.createCipheriv('aes-256-cbc', key, iv);
-    return Buffer.concat([cipher.update(data), cipher.final()]);
+    const cryptoKey = await subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['encrypt']);
+    const encrypted = await subtle.encrypt({ name: 'AES-CBC', iv }, cryptoKey, data);
+    return Buffer.from(encrypted);
 }
 
 
-function decrypt(key, data, iv) {
+async function decrypt(key, data, iv) {
     assertBuffer(key);
     assertBuffer(data);
     assertBuffer(iv);
-    const decipher = nodeCrypto.createDecipheriv('aes-256-cbc', key, iv);
-    return Buffer.concat([decipher.update(data), decipher.final()]);
+    const cryptoKey = await subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['decrypt']);
+    const decrypted = await subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, data);
+    return Buffer.from(decrypted);
 }
 
 
-function calculateMAC(key, data) {
+async function calculateMAC(key, data) {
     assertBuffer(key);
     assertBuffer(data);
-    const hmac = nodeCrypto.createHmac('sha256', key);
-    hmac.update(data);
-    return Buffer.from(hmac.digest());
+    const cryptoKey = await subtle.importKey(
+        'raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const mac = await subtle.sign('HMAC', cryptoKey, data);
+    return Buffer.from(mac);
 }
 
 
-function hash(data) {
-    assertBuffer(data);
-    const sha512 = nodeCrypto.createHash('sha512');
-    sha512.update(data);
-    return sha512.digest();
+async function hash(data) {
+    const result = await subtle.digest('SHA-512', data);
+    return Buffer.from(result);
 }
 
 
 // Salts always end up being 32 bytes
-function deriveSecrets(input, salt, info, chunks) {
+async function deriveSecrets(input, salt, info, chunks) {
     // Specific implementation of RFC 5869 that only returns the first 3 32-byte chunks
     assertBuffer(input);
     assertBuffer(salt);
@@ -60,31 +63,35 @@ function deriveSecrets(input, salt, info, chunks) {
     }
     chunks = chunks || 3;
     assert(chunks >= 1 && chunks <= 3);
-    const PRK = calculateMAC(salt, input);
+    const PRK = await calculateMAC(salt, input);
     const infoArray = new Uint8Array(info.byteLength + 1 + 32);
     infoArray.set(info, 32);
     infoArray[infoArray.length - 1] = 1;
-    const signed = [calculateMAC(PRK, Buffer.from(infoArray.slice(32)))];
+    const signed = [await calculateMAC(PRK, Buffer.from(infoArray.slice(32)))];
     if (chunks > 1) {
         infoArray.set(signed[signed.length - 1]);
         infoArray[infoArray.length - 1] = 2;
-        signed.push(calculateMAC(PRK, Buffer.from(infoArray)));
+        signed.push(await calculateMAC(PRK, Buffer.from(infoArray)));
     }
     if (chunks > 2) {
         infoArray.set(signed[signed.length - 1]);
         infoArray[infoArray.length - 1] = 3;
-        signed.push(calculateMAC(PRK, Buffer.from(infoArray)));
+        signed.push(await calculateMAC(PRK, Buffer.from(infoArray)));
     }
     return signed;
 }
 
-function verifyMAC(data, key, mac, length) {
-    const calculatedMac = calculateMAC(key, data).subarray(0, length);
+async function verifyMAC(data, key, mac, length) {
+    const calculatedMac = (await calculateMAC(key, data)).subarray(0, length);
     if (mac.length !== length || calculatedMac.length !== length) {
        throw new Error("Bad MAC length Expected: " + length +
             " Got: " + mac.length + " and " + calculatedMac.length);
     }
-    if (!nodeCrypto.timingSafeEqual(mac, calculatedMac)) {
+    let diff = 0;
+    for (let i = 0; i < length; i++) {
+        diff |= mac[i] ^ calculatedMac[i];
+    }
+    if (diff !== 0) {
          throw new Error("Bad MAC Expected: " + calculatedMac.toString('hex') +
             " Got: " + mac.toString('hex'));
     }
