@@ -290,14 +290,14 @@ class SessionCipher {
             ratchet.previousCounter = prevCounter.chainKey.counter;
             session.deleteChain(ratchet.ephemeralKeyPair.pubKey);
         }
-        ratchet.ephemeralKeyPair = curve.generateKeyPair();
+        ratchet.ephemeralKeyPair = await curve.generateKeyPair();
         await this.calculateRatchet(session, remoteKey, true);
         ratchet.lastRemoteEphemeralKey = remoteKey;
     }
 
     async calculateRatchet(session, remoteKey, sending) {
         let ratchet = session.currentRatchet;
-        const sharedSecret = curve.calculateAgreement(remoteKey, ratchet.ephemeralKeyPair.privKey);
+        const sharedSecret = await curve.calculateAgreement(remoteKey, ratchet.ephemeralKeyPair.privKey);
         const masterKey = await crypto.deriveSecrets(sharedSecret, ratchet.rootKey,
                                                Buffer.from("WhisperRatchet"), /*chunks*/ 2);
         const chainKey = sending ? ratchet.ephemeralKeyPair.pubKey : remoteKey;

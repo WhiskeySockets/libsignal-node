@@ -2,12 +2,15 @@
 'use strict';
 
 const curveJs = require('curve25519-js');
-const nodeCrypto = require('crypto');
+const { webcrypto } = require('crypto');
+const subtle = webcrypto.subtle;
+
+// DER prefixes for X25519 keys (used for WebCrypto import/export)
 // from: https://github.com/digitalbazaar/x25519-key-agreement-key-2019/blob/master/lib/crypto.js
 const PUBLIC_KEY_DER_PREFIX = Buffer.from([
     48, 42, 48, 5, 6, 3, 43, 101, 110, 3, 33, 0
 ]);
-  
+
 const PRIVATE_KEY_DER_PREFIX = Buffer.from([
     48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 110, 4, 34, 4, 32
 ]);
@@ -58,68 +61,57 @@ function unclampEd25519PrivateKey(clampedSk) {
     return unclampedSk;
 }
 
-exports.getPublicFromPrivateKey = function(privKey) {
+exports.getPublicFromPrivateKey = async function(privKey) {
     const unclampedPK = unclampEd25519PrivateKey(privKey);
     const keyPair = curveJs.generateKeyPair(unclampedPK);
     return prefixKeyInPublicKey(Buffer.from(keyPair.public));
 };
 
-exports.generateKeyPair = function() {
-    try {
-        const {publicKey: publicDerBytes, privateKey: privateDerBytes} = nodeCrypto.generateKeyPairSync(
-            'x25519',
-            {
-                publicKeyEncoding: { format: 'der', type: 'spki' },
-                privateKeyEncoding: { format: 'der', type: 'pkcs8' }
-            }
-        );
-        const pubKey = publicDerBytes.subarray(PUBLIC_KEY_DER_PREFIX.length, PUBLIC_KEY_DER_PREFIX.length + 32);
-    
-        const privKey = privateDerBytes.subarray(PRIVATE_KEY_DER_PREFIX.length, PRIVATE_KEY_DER_PREFIX.length + 32);
-    
-        return {
-            pubKey: prefixKeyInPublicKey(pubKey),
-            privKey
-        };
-    } catch(e) {
-        const keyPair = curveJs.generateKeyPair(nodeCrypto.randomBytes(32));
-        return {
-            privKey: Buffer.from(keyPair.private),
-            pubKey: prefixKeyInPublicKey(Buffer.from(keyPair.public)),
-        };
-    }
+exports.generateKeyPair = async function() {
+    const keyPair = await subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
+
+    const publicKeyRaw = await subtle.exportKey('raw', keyPair.publicKey);
+    const privateKeyDer = await subtle.exportKey('pkcs8', keyPair.privateKey);
+
+    const pubKey = Buffer.from(publicKeyRaw);
+    const privKey = Buffer.from(new Uint8Array(privateKeyDer).subarray(PRIVATE_KEY_DER_PREFIX.length));
+
+    return {
+        pubKey: prefixKeyInPublicKey(pubKey),
+        privKey
+    };
 };
 
-exports.calculateAgreement = function(pubKey, privKey) {
+exports.calculateAgreement = async function(pubKey, privKey) {
     pubKey = scrubPubKeyFormat(pubKey);
     validatePrivKey(privKey);
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");
     }
 
-    if(typeof nodeCrypto.diffieHellman === 'function') {
-        const nodePrivateKey = nodeCrypto.createPrivateKey({
-            key: Buffer.concat([PRIVATE_KEY_DER_PREFIX, privKey]),
-            format: 'der',
-            type: 'pkcs8'
-        });
-        const nodePublicKey = nodeCrypto.createPublicKey({
-            key: Buffer.concat([PUBLIC_KEY_DER_PREFIX, pubKey]),
-            format: 'der',
-            type: 'spki'
-        });
-        
-        return nodeCrypto.diffieHellman({
-            privateKey: nodePrivateKey,
-            publicKey: nodePublicKey,
-        });
-    } else {
-        const secret = curveJs.sharedKey(privKey, pubKey);
-        return Buffer.from(secret);
-    }
+    const privateKeyObj = await subtle.importKey(
+        'pkcs8',
+        Buffer.concat([PRIVATE_KEY_DER_PREFIX, privKey]),
+        { name: 'X25519' },
+        false,
+        ['deriveBits']
+    );
+    const publicKeyObj = await subtle.importKey(
+        'raw',
+        pubKey,
+        { name: 'X25519' },
+        false,
+        []
+    );
+
+    const shared = await subtle.deriveBits({ name: 'X25519', public: publicKeyObj }, privateKeyObj, 256);
+    return Buffer.from(shared);
 };
 
-exports.calculateSignature = function(privKey, message) {
+// XEdDSA signatures use Curve25519 keys converted to Ed25519-style — not supported by
+// WebCrypto, so we keep using curve25519-js here but expose an async interface for
+// consistency with the rest of the module.
+exports.calculateSignature = async function(privKey, message) {
     validatePrivKey(privKey);
     if (!message) {
         throw new Error("Invalid message");
@@ -127,7 +119,7 @@ exports.calculateSignature = function(privKey, message) {
     return Buffer.from(curveJs.sign(privKey, message));
 };
 
-exports.verifySignature = function(pubKey, msg, sig, isInit) {
+exports.verifySignature = async function(pubKey, msg, sig, isInit) {
     pubKey = scrubPubKeyFormat(pubKey);
     if (!pubKey || pubKey.byteLength != 32) {
         throw new Error("Invalid public key");

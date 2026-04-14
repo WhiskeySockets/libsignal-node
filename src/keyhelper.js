@@ -14,7 +14,7 @@ exports.generateRegistrationId = function() {
     return registrationId & 0x3fff;
 };
 
-exports.generateSignedPreKey = function(identityKeyPair, signedKeyId) {
+exports.generateSignedPreKey = async function(identityKeyPair, signedKeyId) {
     if (!(identityKeyPair.privKey instanceof Buffer) ||
         identityKeyPair.privKey.byteLength != 32 ||
         !(identityKeyPair.pubKey instanceof Buffer) ||
@@ -24,8 +24,8 @@ exports.generateSignedPreKey = function(identityKeyPair, signedKeyId) {
     if (!isNonNegativeInteger(signedKeyId)) {
         throw new TypeError('Invalid argument for signedKeyId: ' + signedKeyId);
     }
-    const keyPair = curve.generateKeyPair();
-    const sig = curve.calculateSignature(identityKeyPair.privKey, keyPair.pubKey);
+    const keyPair = await curve.generateKeyPair();
+    const sig = await curve.calculateSignature(identityKeyPair.privKey, keyPair.pubKey);
     return {
         keyId: signedKeyId,
         keyPair: keyPair,
@@ -33,11 +33,11 @@ exports.generateSignedPreKey = function(identityKeyPair, signedKeyId) {
     };
 };
 
-exports.generatePreKey = function(keyId) {
+exports.generatePreKey = async function(keyId) {
     if (!isNonNegativeInteger(keyId)) {
         throw new TypeError('Invalid argument for keyId: ' + keyId);
     }
-    const keyPair = curve.generateKeyPair();
+    const keyPair = await curve.generateKeyPair();
     return {
         keyId,
         keyPair
